@@ -5,13 +5,20 @@ export default defineNuxtConfig({
 
   modules: ['@nuxtjs/tailwindcss', '@nuxtjs/supabase'],
 
-  css: ['~/assets/css/tailwind.css'],
-
   runtimeConfig: {
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
-      supabaseKey: process.env.SUPABASE_ANON_KEY,
+      supabasePublishableKey: process.env.SUPABASE_PUBLISHABLE_KEY,
+      supabaseKey: process.env.SUPABASE_KEY,
       siteUrl: process.env.SITE_URL,
+    },
+  },
+
+  supabase: {
+    redirect: true,
+    redirectOptions: {
+      login: '/auth/login',
+      callback: '/',
     },
   },
 })
