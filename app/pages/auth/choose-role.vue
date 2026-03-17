@@ -25,7 +25,7 @@ async function choose(role: 'producer' | 'student') {
       router.replace('/learn')
     }
   } catch (err: any) {
-    errorMessage.value = err.message ?? 'Não foi possível definir o perfil.'
+    errorMessage.value = err.message ?? 'Could not set profile.'
   } finally {
     loading.value = false
   }
@@ -36,10 +36,10 @@ async function choose(role: 'producer' | 'student') {
   <div class="min-h-screen flex items-center justify-center bg-slate-950">
     <div class="w-full max-w-md bg-slate-900/80 border border-slate-800 rounded-2xl p-8 shadow-2xl">
       <h1 class="text-2xl font-semibold text-white mb-4 text-center">
-        Como você vai usar o pdf2course?
+        How will you use pdf2course?
       </h1>
       <p class="text-sm text-slate-300 mb-6 text-center">
-        Escolha um perfil para personalizar sua experiência. Você poderá pedir ao suporte para mudar depois.
+        Choose a profile to personalize your experience. You can ask support to change it later.
       </p>
 
       <div class="space-y-4">
@@ -50,10 +50,10 @@ async function choose(role: 'producer' | 'student') {
           @click="choose('producer')"
         >
           <div class="text-sm font-semibold text-emerald-300">
-            Produtor de cursos
+            Course producer
           </div>
           <div class="text-xs text-slate-300 mt-1">
-            Crie cursos gamificados a partir de PDFs e gerencie seus alunos.
+            Create gamified courses from PDFs and manage your students.
           </div>
         </button>
 
@@ -64,10 +64,10 @@ async function choose(role: 'producer' | 'student') {
           @click="choose('student')"
         >
           <div class="text-sm font-semibold text-slate-100">
-            Estudante
+            Student
           </div>
           <div class="text-xs text-slate-300 mt-1">
-            Acesse cursos e acompanhe seu progresso em formato Duolingo-style.
+            Access courses and track your progress in a Duolingo-style format.
           </div>
         </button>
       </div>

@@ -18,9 +18,9 @@ async function handleForgot() {
       redirectTo: siteUrl ? `${siteUrl}/auth/reset-password` : undefined,
     })
     if (error) throw error
-    message.value = 'Se o email existir, enviaremos um link de redefinição.'
+    message.value = 'If the email exists, we will send a reset link.'
   } catch (err: any) {
-    errorMessage.value = err.message ?? 'Erro ao solicitar redefinição de senha.'
+    errorMessage.value = err.message ?? 'Error requesting password reset.'
   } finally {
     loading.value = false
   }
@@ -31,7 +31,7 @@ async function handleForgot() {
   <div class="min-h-screen flex items-center justify-center bg-slate-950">
     <div class="w-full max-w-md bg-slate-900/80 border border-slate-800 rounded-2xl p-8 shadow-2xl">
       <h1 class="text-2xl font-semibold text-white mb-6 text-center">
-        Esqueci minha senha
+        Forgot my password
       </h1>
 
       <form class="space-y-4" @submit.prevent="handleForgot">
@@ -43,7 +43,7 @@ async function handleForgot() {
             type="email"
             required
             class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            placeholder="voce@exemplo.com"
+            placeholder="you@example.com"
           >
         </div>
 
@@ -52,7 +52,7 @@ async function handleForgot() {
           class="w-full inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           :disabled="loading"
         >
-          Enviar link de redefinição
+          Send reset link
         </button>
       </form>
 
@@ -65,7 +65,7 @@ async function handleForgot() {
 
       <div class="mt-6 text-xs text-slate-400">
         <NuxtLink to="/auth/login" class="hover:text-emerald-400">
-          Voltar para login
+          Back to login
         </NuxtLink>
       </div>
     </div>

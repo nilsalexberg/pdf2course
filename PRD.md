@@ -7,6 +7,7 @@
 **Date:** 2026-03-16  
 **Status:** Draft  
 **Stack:** Nuxt.js · TypeScript · Tailwind CSS · Supabase · Google Gemini 2.5 Flash
+**Language:** English
 
 ---
 
