@@ -10,6 +10,7 @@
    - `SUPABASE_KEY=...`
    - `SITE_URL=http://localhost:3000`
 3. Rode as migrations em `supabase/migrations` no banco do Supabase.
+4. Crie o bucket de storage **course-covers** no Supabase (Storage → New bucket), privado. Para o upload e leitura de capas funcionarem, adicione políticas que permitam utilizadores autenticados a fazer upload e leitura em pastas com o nome do seu `auth.uid()` (ex.: policy para `(storage.foldername(name))[1] = auth.uid()::text`).
 
 ### Google OAuth (opcional neste momento)
 
