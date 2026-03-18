@@ -10,7 +10,7 @@ const errorMessage = ref<string | null>(null)
 
 watch(
   user,
-  (u) => {
+  (u: any) => {
     if (u) {
       router.replace('/auth/choose-role')
     }
@@ -43,38 +43,31 @@ async function handleRegister() {
       </h1>
 
       <form class="space-y-4" @submit.prevent="handleRegister">
-        <div>
-          <label class="block text-sm font-medium text-slate-200 mb-1" for="email">Email</label>
-          <input
-            id="email"
-            v-model="email"
-            type="email"
-            required
-            class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            placeholder="you@example.com"
-          >
-        </div>
+        <UiInput
+          id="email"
+          v-model="email"
+          type="email"
+          label="Email"
+          placeholder="you@example.com"
+          required
+        />
 
-        <div>
-          <label class="block text-sm font-medium text-slate-200 mb-1" for="password">Password</label>
-          <input
-            id="password"
-            v-model="password"
-            type="password"
-            required
-            minlength="6"
-            class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            placeholder="Minimum 6 characters"
-          >
-        </div>
+        <UiInput
+          id="password"
+          v-model="password"
+          type="password"
+          label="Password"
+          placeholder="Minimum 6 characters"
+          required
+          minlength="6"
+        />
 
-        <button
+        <UiButton
           type="submit"
-          class="w-full inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-          :disabled="loading"
+          :loading="loading"
         >
           Create account
-        </button>
+        </UiButton>
       </form>
 
       <p v-if="errorMessage" class="mt-4 text-sm text-red-400">

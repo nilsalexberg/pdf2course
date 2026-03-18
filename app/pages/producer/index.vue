@@ -16,12 +16,12 @@ const { data: courses, pending, error } = await useFetch<CourseWithSignedCover[]
         <h1 class="text-2xl font-semibold text-white">
           My courses
         </h1>
-        <NuxtLink
+        <UiButton
           to="/producer/courses/new"
-          class="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 transition-colors"
+          :block="false"
         >
           New course
-        </NuxtLink>
+        </UiButton>
       </div>
 
       <p v-if="error" class="text-sm text-red-400 mb-4">
@@ -36,12 +36,12 @@ const { data: courses, pending, error } = await useFetch<CourseWithSignedCover[]
         <p class="mb-4">
           You don’t have any courses yet.
         </p>
-        <NuxtLink
+        <UiButton
           to="/producer/courses/new"
-          class="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 transition-colors"
+          :block="false"
         >
           Create your first course
-        </NuxtLink>
+        </UiButton>
       </div>
 
       <ul v-else class="space-y-4">

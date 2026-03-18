@@ -95,76 +95,57 @@ async function handleSubmit() {
         </h1>
 
         <form class="space-y-4" @submit.prevent="handleSubmit">
-          <div>
-            <label class="block text-sm font-medium text-slate-200 mb-1" for="title">Title</label>
-            <input
-              id="title"
-              v-model="title"
-              type="text"
-              required
-              class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              placeholder="Course title"
-            >
-          </div>
+          <UiInput
+            id="title"
+            v-model="title"
+            type="text"
+            label="Title"
+            placeholder="Course title"
+            required
+          />
 
-          <div>
-            <label class="block text-sm font-medium text-slate-200 mb-1" for="description">Description</label>
-            <textarea
-              id="description"
-              v-model="description"
-              rows="3"
-              class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
-              placeholder="Optional short description"
+          <UiTextarea
+            id="description"
+            v-model="description"
+            label="Description"
+            placeholder="Optional short description"
+            :rows="3"
+          />
+
+          <UiFileInput
+            label="Cover image"
+            accept="image/jpeg,image/png,image/webp"
+            help="Optional. JPEG, PNG or WebP, max 5MB."
+            @change="onCoverChange"
+          />
+
+          <div class="grid grid-cols-2 gap-4">
+            <UiInput
+              id="num_modules"
+              v-model.number="numModules"
+              type="number"
+              label="Number of modules"
+              required
+              :min="1"
+              :max="50"
+            />
+            <UiInput
+              id="lessons_per_module"
+              v-model.number="lessonsPerModule"
+              type="number"
+              label="Lessons per module"
+              required
+              :min="1"
+              :max="20"
             />
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-slate-200 mb-1">Cover image</label>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              class="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-700 file:text-slate-200 file:font-medium file:cursor-pointer hover:file:bg-slate-600"
-              @change="onCoverChange"
-            >
-            <p class="mt-1 text-xs text-slate-500">
-              Optional. JPEG, PNG or WebP, max 5MB.
-            </p>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-slate-200 mb-1" for="num_modules">Number of modules</label>
-              <input
-                id="num_modules"
-                v-model.number="numModules"
-                type="number"
-                min="1"
-                max="50"
-                required
-                class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              >
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-200 mb-1" for="lessons_per_module">Lessons per module</label>
-              <input
-                id="lessons_per_module"
-                v-model.number="lessonsPerModule"
-                type="number"
-                min="1"
-                max="20"
-                required
-                class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              >
-            </div>
-          </div>
-
-          <button
+          <UiButton
             type="submit"
-            class="w-full inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            :disabled="loading"
+            :loading="loading"
           >
             {{ loading ? 'Creating…' : 'Create course' }}
-          </button>
+          </UiButton>
         </form>
 
         <p v-if="errorMessage" class="mt-4 text-sm text-red-400">
