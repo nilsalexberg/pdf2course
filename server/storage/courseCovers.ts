@@ -40,3 +40,10 @@ export async function createSignedCoverUrl(client: any, path: string, expiresSec
   return data?.signedUrl ?? null
 }
 
+export async function deleteCourseCover(client: any, path: string) {
+  const { error } = await client.storage.from('course-covers').remove([path])
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+}
+

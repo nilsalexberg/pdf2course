@@ -4,9 +4,20 @@ import type { CourseWithSignedCover } from '~/types/course'
 definePageMeta({ middleware: ['auth', 'role'] })
 useProfile()
 
-const { data: courses, pending, error } = await useFetch<CourseWithSignedCover[]>('/api/courses', {
+const { data: courses, pending, error, refresh } = await useFetch<CourseWithSignedCover[]>('/api/courses', {
   default: () => [],
 })
+
+async function deleteCourse(id: string) {
+  if (!confirm('Are you sure you want to delete this course?')) return
+
+  try {
+    await $fetch(`/api/courses/${id}`, { method: 'DELETE' } as any)
+    await refresh()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'Failed to delete course')
+  }
+}
 </script>
 
 <template>
@@ -81,13 +92,19 @@ const { data: courses, pending, error } = await useFetch<CourseWithSignedCover[]
               </span>
             </p>
           </div>
-          <div class="shrink-0 flex items-center pr-4">
+          <div class="shrink-0 flex items-center pr-4 gap-4">
             <NuxtLink
               :to="`/producer/courses/${course.id}/edit`"
               class="text-sm text-emerald-400 hover:text-emerald-300"
             >
               Edit
             </NuxtLink>
+            <button
+              class="text-sm text-red-400 hover:text-red-300 transition-colors"
+              @click="deleteCourse(course.id)"
+            >
+              Delete
+            </button>
           </div>
         </li>
       </ul>

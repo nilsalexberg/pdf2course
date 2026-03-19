@@ -39,3 +39,43 @@ export async function updateCourseCoverUrl(client: any, courseId: string, coverU
   }
 }
 
+export async function getCourseById(client: any, id: string): Promise<Course> {
+  const { data: course, error } = await client
+    .from('courses')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) {
+    throw createError({ statusCode: 404, statusMessage: 'Course not found' })
+  }
+
+  return course as Course
+}
+
+export async function updateCourse(
+  client: any,
+  id: string,
+  input: { title: string; description: string | null; config: any },
+): Promise<Course> {
+  const { data: course, error } = await client
+    .from('courses')
+    .update(input)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  return course as Course
+}
+
+export async function deleteCourse(client: any, id: string): Promise<void> {
+  const { error } = await client.from('courses').delete().eq('id', id)
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+}
+
