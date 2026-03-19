@@ -28,8 +28,8 @@ const { data: courses, pending, error } = await useFetch<CourseWithSignedCover[]
         {{ error.message }}
       </p>
 
-      <div v-if="pending" class="text-sm text-slate-400">
-        Loading…
+      <div v-if="pending" class="flex justify-center py-12">
+        <UiSpinner class="w-8 h-8 text-emerald-500" />
       </div>
 
       <div v-else-if="!courses?.length" class="rounded-2xl border border-slate-800 bg-slate-900/80 p-8 text-center text-slate-400">

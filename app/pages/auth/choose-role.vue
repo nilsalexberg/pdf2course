@@ -2,6 +2,7 @@
 const client = useSupabaseClient()
 const user = useSupabaseUser()
 const router = useRouter()
+const { refresh } = useProfile()
 
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
@@ -18,11 +19,13 @@ async function choose(role: 'producer' | 'student') {
   try {
     const { data, error } = await client.rpc('set_role', { new_role: role })
     if (error) throw error
+    
+    await refresh()
 
     if (data?.role === 'producer') {
-      router.replace('/producer')
+      await navigateTo('/producer', { replace: true })
     } else {
-      router.replace('/learn')
+      await navigateTo('/learn', { replace: true })
     }
   } catch (err: any) {
     errorMessage.value = err.message ?? 'Could not set profile.'
@@ -45,12 +48,15 @@ async function choose(role: 'producer' | 'student') {
       <div class="space-y-4">
         <button
           type="button"
-          class="w-full rounded-xl border border-emerald-500/60 bg-emerald-500/10 px-4 py-3 text-left hover:bg-emerald-500/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          class="relative w-full rounded-xl border border-emerald-500/60 bg-emerald-500/10 px-4 py-3 text-left hover:bg-emerald-500/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           :disabled="loading"
           @click="choose('producer')"
         >
-          <div class="text-sm font-semibold text-emerald-300">
-            Course producer
+          <div class="flex items-center justify-between">
+            <div class="text-sm font-semibold text-emerald-300">
+              Course producer
+            </div>
+            <UiSpinner v-if="loading" class="w-4 h-4 text-emerald-500" />
           </div>
           <div class="text-xs text-slate-300 mt-1">
             Create gamified courses from PDFs and manage your students.
@@ -59,12 +65,15 @@ async function choose(role: 'producer' | 'student') {
 
         <button
           type="button"
-          class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-left hover:bg-slate-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          class="relative w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-left hover:bg-slate-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           :disabled="loading"
           @click="choose('student')"
         >
-          <div class="text-sm font-semibold text-slate-100">
-            Student
+          <div class="flex items-center justify-between">
+            <div class="text-sm font-semibold text-slate-100">
+              Student
+            </div>
+            <UiSpinner v-if="loading" class="w-4 h-4 text-slate-400" />
           </div>
           <div class="text-xs text-slate-300 mt-1">
             Access courses and track your progress in a Duolingo-style format.

@@ -28,6 +28,7 @@ const buttonClasses = computed(() => [
     <slot />
   </NuxtLink>
   <button v-else :type="type" :disabled="disabled || loading" :class="buttonClasses">
+    <UiSpinner v-if="loading" class="w-4 h-4 mr-2" />
     <slot />
   </button>
 </template>
