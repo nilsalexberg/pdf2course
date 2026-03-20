@@ -17,7 +17,7 @@ export default defineEventHandler(async (event): Promise<Course> => {
     throw createError({ statusCode: 400, statusMessage: 'Missing course ID' })
   }
 
-  const { fields, cover } = await readCourseCreateMultipart(event)
+  const { fields, cover, pdfs } = await readCourseCreateMultipart(event)
 
   const parsed = courseCreateSchema.safeParse({
     title: fields.title ?? '',
@@ -32,5 +32,5 @@ export default defineEventHandler(async (event): Promise<Course> => {
     })
   }
 
-  return await updateCourse(client, user.id, id, parsed.data, cover)
+  return await updateCourse(client, user.id, id, parsed.data, cover, pdfs)
 })

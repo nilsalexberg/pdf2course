@@ -1,5 +1,5 @@
 import { createError } from 'h3'
-import type { Course } from '../../types/course'
+import type { Course, CoursePdf } from '../../types/course'
 
 export async function listCoursesByProducerId(client: any, producerId: string): Promise<Course[]> {
   const { data: courses, error } = await client
@@ -84,6 +84,38 @@ export async function insertCoursePdf(
   input: { course_id: string; file_path: string; filename: string; size_bytes: number },
 ): Promise<void> {
   const { error } = await client.from('course_pdfs').insert(input)
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+}
+
+export async function listCoursePdfs(client: any, courseId: string): Promise<CoursePdf[]> {
+  const { data, error } = await client
+    .from('course_pdfs')
+    .select('*')
+    .eq('course_id', courseId)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  return (data ?? []) as CoursePdf[]
+}
+
+export async function getCoursePdfById(client: any, pdfId: string): Promise<CoursePdf> {
+  const { data, error } = await client.from('course_pdfs').select('*').eq('id', pdfId).single()
+
+  if (error) {
+    throw createError({ statusCode: 404, statusMessage: 'PDF not found' })
+  }
+
+  return data as CoursePdf
+}
+
+export async function deleteCoursePdfFromDb(client: any, pdfId: string): Promise<void> {
+  const { error } = await client.from('course_pdfs').delete().eq('id', pdfId)
 
   if (error) {
     throw createError({ statusCode: 500, statusMessage: error.message })

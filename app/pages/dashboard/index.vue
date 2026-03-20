@@ -70,7 +70,7 @@ async function deleteCourse(id: string) {
               <img
                 :src="course.cover_url_signed"
                 :alt="course.title"
-                class="w-full h-24 object-cover"
+                class="w-full aspect-[1/1] object-cover"
               >
             </div>
             <div class="flex-1 min-w-0 py-4 pr-4">

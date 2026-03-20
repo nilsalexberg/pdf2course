@@ -16,6 +16,7 @@ const lessonsPerModule = ref(4)
 const coverFile = ref<File | null>(null)
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
+const stagedPdfs = ref<File[]>([])
 
 // Initialize form with course data
 watch(course as any, (newCourse: CourseWithSignedCover | null) => {
@@ -69,6 +70,10 @@ async function handleSubmit() {
     formData.set('lessons_per_module', String(lessonsPerModule.value))
     if (coverFile.value) {
       formData.set('cover', coverFile.value)
+    }
+
+    for (const pdf of stagedPdfs.value) {
+      formData.append('pdfs', pdf)
     }
 
     await $fetch(`/api/courses/${id}`, {
@@ -159,6 +164,13 @@ async function handleSubmit() {
               required
               :min="1"
               :max="20"
+            />
+          </div>
+
+          <div class="pt-6 border-t border-slate-800/50">
+            <CoursesSourcePdfs 
+              :course-id="id"
+              @update:staged-pdfs="stagedPdfs = $event"
             />
           </div>
 

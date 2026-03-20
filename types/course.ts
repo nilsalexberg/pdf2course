@@ -30,3 +30,7 @@ export interface CoursePdf {
   created_at: string
   updated_at: string
 }
+
+export interface CoursePdfWithSignedUrl extends CoursePdf {
+  url_signed: string
+}

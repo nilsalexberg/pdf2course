@@ -42,3 +42,13 @@ export async function deleteCoursePdf(client: any, path: string) {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
 }
+
+export async function createSignedPdfUrl(client: any, path: string): Promise<string> {
+  const { data, error } = await client.storage.from('course-pdfs').createSignedUrl(path, 3600) // 1 hour
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  return data.signedUrl
+}
