@@ -6,6 +6,7 @@
 ### Tech Stack
 - **Framework**: [Nuxt 4](https://nuxt.com/) (using the `app/` and `server/` directory structure).
 - **Language**: TypeScript (Strict Mode).
+- **Package Manager**: [pnpm](https://pnpm.io/).
 - **Backend / API**: Nuxt Server Routes (Nitro) + [H3](https://h3.unjs.io/).
 - **Database / Auth / Storage**: [Supabase](https://supabase.com/).
 - **AI**: Google Gemini API (`gemini-2.5-flash`).

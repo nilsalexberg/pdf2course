@@ -1,7 +1,7 @@
 # PRD — pdf2course (Summary)
 ## Automatic Duolingo-Style Course Generator from PDFs
  
-**Stack:** Nuxt.js · TypeScript · Tailwind CSS · Supabase · Google Gemini 2.5 Flash
+**Stack:** [pnpm](https://pnpm.io/) · [Nuxt 4](https://nuxt.com/) · TypeScript · Tailwind CSS · Supabase · Google Gemini 2.5 Flash
 
 ---
 
