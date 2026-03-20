@@ -4,8 +4,6 @@
 ---
 
 **Version:** 2.0  
-**Date:** 2026-03-19  
-**Status:** Draft  
 **Stack:** Nuxt.js · TypeScript · Tailwind CSS · Supabase · Google Gemini 2.5 Flash
 
 ---
