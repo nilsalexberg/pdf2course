@@ -12,7 +12,7 @@ export default defineEventHandler(async (event): Promise<Course> => {
 
   await requireRole(event, client, user.id)
 
-  const { fields, cover } = await readCourseCreateMultipart(event)
+  const { fields, cover, pdfs } = await readCourseCreateMultipart(event)
 
   const parsed = courseCreateSchema.safeParse({
     title: fields.title ?? '',
@@ -27,5 +27,5 @@ export default defineEventHandler(async (event): Promise<Course> => {
     })
   }
 
-  return await createCourse(client, user.id, parsed.data, cover)
+  return await createCourse(client, user.id, parsed.data, cover, pdfs)
 })

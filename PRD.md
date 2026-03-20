@@ -154,47 +154,6 @@ jobs                 → id, type, payload (jsonb), status (pending|processing|c
 | `user_stats` | User can read/write their own stats only. |
 | `jobs` | Server-side only (service role). |
 
-### 4.4 Nuxt Folder Structure
-
-```
-/
-├── pages/
-│   ├── auth/
-│   ├── dashboard/          ← unified home for all users
-│   ├── courses/
-│   │   ├── new/            ← create course
-│   │   ├── [id]/
-│   │   │   ├── edit/       ← edit course settings
-│   │   │   ├── content/    ← edit generated content
-│   │   │   └── play/       ← lesson engine entry
-│   ├── discover/           ← browse public courses
-│   └── admin/
-│       ├── review/
-│       └── users/
-├── server/
-│   ├── api/
-│   │   ├── courses/
-│   │   ├── modules/
-│   │   ├── lessons/
-│   │   ├── plays/
-│   │   ├── progress/
-│   │   └── admin/
-│   └── services/
-│       ├── pdf-extractor.ts
-│       ├── ai-generator.ts
-│       └── job-processor.ts
-├── composables/
-├── components/
-│   ├── course/
-│   ├── learn/
-│   └── admin/
-├── middleware/
-│   ├── auth.ts
-│   └── admin.ts
-└── supabase/
-    └── migrations/
-```
-
 ---
 
 ## 5. Functional Modules

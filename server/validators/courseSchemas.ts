@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const CourseCreateLimits = {
   numModules: { min: 1, max: 50 },
   lessonsPerModule: { min: 1, max: 20 },
+  pdfs: { maxFiles: 5, maxSizeBytes: 50 * 1024 * 1024 },
 } as const
 
 export const courseCreateSchema = z.object({

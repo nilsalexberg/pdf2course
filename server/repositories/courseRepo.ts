@@ -79,3 +79,14 @@ export async function deleteCourse(client: any, id: string): Promise<void> {
   }
 }
 
+export async function insertCoursePdf(
+  client: any,
+  input: { course_id: string; file_path: string; filename: string; size_bytes: number },
+): Promise<void> {
+  const { error } = await client.from('course_pdfs').insert(input)
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+}
+

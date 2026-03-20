@@ -20,3 +20,13 @@ export interface Course {
 export interface CourseWithSignedCover extends Course {
   cover_url_signed: string | null
 }
+
+export interface CoursePdf {
+  id: string
+  course_id: string
+  file_path: string
+  filename: string
+  size_bytes: number
+  created_at: string
+  updated_at: string
+}

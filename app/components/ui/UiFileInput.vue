@@ -4,6 +4,7 @@ defineProps<{
   label?: string
   accept?: string
   help?: string
+  multiple?: boolean
 }>()
 
 defineEmits<{
@@ -18,6 +19,7 @@ defineEmits<{
       :id="id"
       type="file"
       :accept="accept"
+      :multiple="multiple"
       class="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-700 file:text-slate-200 file:font-medium file:cursor-pointer hover:file:bg-slate-600"
       @change="$emit('change', $event)"
     >

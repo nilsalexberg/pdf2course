@@ -45,9 +45,25 @@ export function parseMultipart(parts: MultipartPart[] | undefined): MultipartRes
 export async function readCourseCreateMultipart(event: any) {
   const parts = await readMultipart(event)
   const { fields, files } = parseMultipart(parts)
+
+  // Extract multiple pdfs if they exist
+  const pdfs: MultipartFile[] = []
+  if (parts) {
+    for (const part of parts) {
+      if (part.name?.toLowerCase() === 'pdfs' && part.filename && part.data) {
+        pdfs.push({
+          data: part.data,
+          filename: part.filename,
+          type: part.type ?? '',
+        })
+      }
+    }
+  }
+
   return {
     fields,
     cover: files.cover ?? null,
+    pdfs,
   }
 }
 

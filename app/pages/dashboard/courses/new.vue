@@ -10,8 +10,11 @@ const lessonsPerModule = ref(4)
 const coverFile = ref<File | null>(null)
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
+const pdfFiles = ref<File[]>([])
 
 const COVER_MAX_SIZE = 5 * 1024 * 1024 // 5MB
+const PDF_MAX_SIZE = 50 * 1024 * 1024 // 50MB
+const PDF_MAX_FILES = 5
 
 function onCoverChange(e: Event) {
   const input = e.target as HTMLInputElement
@@ -34,6 +37,36 @@ function onCoverChange(e: Event) {
   }
   errorMessage.value = null
   coverFile.value = file
+}
+
+function onPdfsChange(e: Event) {
+  errorMessage.value = null
+  const input = e.target as HTMLInputElement
+  const files = Array.from(input.files || [])
+  
+  if (files.length > PDF_MAX_FILES) {
+    errorMessage.value = `You can upload at most ${PDF_MAX_FILES} PDFs.`
+    pdfFiles.value = []
+    input.value = ''
+    return
+  }
+
+  for (const file of files) {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      errorMessage.value = `File "${file.name}" is not a PDF.`
+      pdfFiles.value = []
+      input.value = ''
+      return
+    }
+    if (file.size > PDF_MAX_SIZE) {
+      errorMessage.value = `PDF "${file.name}" exceeds the 50MB limit.`
+      pdfFiles.value = []
+      input.value = ''
+      return
+    }
+  }
+
+  pdfFiles.value = files
 }
 
 async function handleSubmit() {
@@ -63,6 +96,10 @@ async function handleSubmit() {
     formData.set('lessons_per_module', String(less))
     if (coverFile.value) {
       formData.set('cover', coverFile.value)
+    }
+
+    for (const pdf of pdfFiles.value) {
+      formData.append('pdfs', pdf)
     }
 
     await $fetch('/api/courses', {
@@ -117,6 +154,14 @@ async function handleSubmit() {
             accept="image/jpeg,image/png,image/webp"
             help="Optional. JPEG, PNG or WebP, max 5MB."
             @change="onCoverChange"
+          />
+
+          <UiFileInput
+            label="Source PDFs"
+            accept="application/pdf"
+            multiple
+            help="Upload up to 5 PDFs, max 50MB each. Required for content generation."
+            @change="onPdfsChange"
           />
 
           <div class="grid grid-cols-2 gap-4">
