@@ -12,7 +12,7 @@ watch(
   user,
   (u: any) => {
     if (u) {
-      router.replace('/auth/choose-role')
+      router.replace('/dashboard')
     }
   },
   { immediate: true },

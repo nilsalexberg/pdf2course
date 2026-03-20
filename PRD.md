@@ -3,11 +3,10 @@
 
 ---
 
-**Version:** 1.2  
-**Date:** 2026-03-16  
+**Version:** 2.0  
+**Date:** 2026-03-19  
 **Status:** Draft  
 **Stack:** Nuxt.js · TypeScript · Tailwind CSS · Supabase · Google Gemini 2.5 Flash
-**Language:** English
 
 ---
 
@@ -15,63 +14,86 @@
 
 ### 1.1 Problem
 
-Educational content producers — teachers, corporate trainers, coaches, and content creators — have instructional material in PDF format but lack accessible tools to transform it into engaging learning experiences. Building a gamified course from scratch requires significant time, technical resources, and instructional design expertise that most producers simply do not have.
+People with knowledge to share have instructional material in PDF format but lack accessible tools to transform it into engaging learning experiences. At the same time, learners lack a single place to find gamified, bite-sized courses on niche topics. The barrier to course creation is too high, and the barrier to finding quality learning content is too scattered.
 
 ### 1.2 Solution
 
-**pdf2course** is a SaaS platform that allows content producers to upload PDFs and automatically generate Duolingo-style gamified courses from them — with structured lessons, interactive exercises, a points system, and visual progress tracking — without any technical knowledge required.
+**pdf2course** is a platform where any registered user can:
+
+1. **Create** a course by uploading PDFs — the platform automatically generates a Duolingo-style gamified course from them.
+2. **Play** any of their own courses privately.
+3. **Publish** their course publicly so other users can play and learn from it.
+4. **Discover and play** publicly available courses created by other users.
+
+There are no separate "producer" and "student" roles. Every user is both a potential creator and a learner. The only special role is **admin**, which is responsible for approving courses before they go public.
 
 ### 1.3 Business Goals
 
-- Reduce to under 30 minutes the time needed for a producer to publish a course from a PDF.
-- Deliver a learning experience with a retention rate above 70% (measured by module completion).
-- Enable a multi-tenant platform: multiple producers, multiple courses, multiple students.
+- Let any user create and publish a course in under 30 minutes.
+- Build a self-growing library of gamified public courses.
+- Maintain content quality via admin review before public publication.
+- Deliver a learning experience with a module completion rate above 70%.
 
 ### 1.4 Success Metrics (KPIs)
 
 | Metric | Initial Target |
 |---|---|
 | Average course creation time | < 30 min |
-| Student module completion rate | > 70% |
-| Producer NPS | > 40 |
+| Module completion rate | > 70% |
+| User NPS | > 40 |
 | AI content generation time | < 5 min per module |
+| Public courses published per week | Growing week-over-week |
 
 ---
 
-## 2. Personas and Roles
+## 2. Roles
 
-### 2.1 Course Producer (`role: producer`)
+### 2.1 User (`role: user`)
 
-An individual or organization that creates and manages courses. Can be a teacher, corporate trainer, coach, or content creator. Has PDFs with material they want to transform into a course.
+The default role for every registered account. A user can simultaneously:
 
-**Needs:**
-- Create courses quickly from existing material.
-- Have control over the structure and generated content.
-- Manage which students have access to their courses.
+- Create courses from PDFs.
+- Play their own courses (private or public).
+- Play any publicly approved course created by other users.
+- Submit their own courses for public review.
 
-### 2.2 Student (`role: student`)
+There is no distinction between "producer" and "student" — the same person does both.
 
-A person enrolled in one or more courses. Consumes content in the gamified format.
+### 2.2 Admin (`role: admin`)
 
-**Needs:**
-- Learn in an engaging way with immediate feedback.
-- Track progress visually.
-- Resume from where they left off in any session.
+A privileged role assigned manually (via database seed or admin panel). Admins can:
 
-### 2.3 Administrator (`role: admin`)
+- Review courses submitted for public publication and approve or reject them.
+- Manage all users on the platform.
+- Access platform-wide metrics.
 
-Responsible for platform health. Reviews courses before they are published, moderates content, and manages users.
-
-**Needs:**
-- View and approve/reject submitted courses.
-- Manage all platform users.
-- Have visibility into general platform metrics.
+Admins can also use the platform as regular users (create and play courses).
 
 ---
 
-## 3. Architecture and Tech Stack
+## 3. Course Visibility Model
 
-### 3.1 Stack
+Every course has a `visibility` field that controls who can access it:
+
+| Visibility Status | Description |
+|---|---|
+| `private` | Only the creator can see and play it. Default when a course is created. |
+| `pending_review` | The creator has requested public publication. Visible only to the creator and admins. |
+| `public` | Approved by admin. Visible and playable by all users on the platform. |
+| `rejected` | Admin rejected the publication request. Returned to the creator as `private` with a rejection reason. |
+
+**Rules:**
+- A course starts as `private` by default.
+- The creator can switch a course from `private` to `pending_review` at any time.
+- Once `rejected`, the course reverts to `private` and can be edited and resubmitted.
+- A `public` course can be pulled back to `private` by the creator or the admin at any time.
+- Only `public` courses appear in the course discovery feed.
+
+---
+
+## 4. Architecture and Tech Stack
+
+### 4.1 Stack
 
 | Layer | Technology |
 |---|---|
@@ -84,40 +106,79 @@ Responsible for platform health. Reviews courses before they are published, mode
 | File Storage | Supabase Storage |
 | AI Content Generation | Google Gemini API — `gemini-2.5-flash` |
 | PDF Extraction | pdf-parse or pdf.js (Node) |
-| Async Jobs / Queues | Supabase Edge Functions + pg_cron or custom queue via `jobs` table |
+| Async Jobs / Queues | Custom queue via `jobs` table + Supabase Edge Functions |
 
-### 3.2 Core Data Model (Supabase / PostgreSQL)
+### 4.2 Core Data Model (Supabase / PostgreSQL)
 
 ```
-users                → managed by Supabase Auth, extended with profiles table
-profiles             → id, role (admin|producer|student), name, avatar_url
-courses              → id, producer_id, title, description, status (draft|pending_review|approved|rejected), config (jsonb)
-course_pdfs          → id, course_id, file_url, file_name, processing_status
+profiles             → id (= auth.users.id), role (user|admin), name, avatar_url, created_at
+
+courses              → id, creator_id, title, description, cover_url,
+                       visibility (private|pending_review|public|rejected),
+                       rejection_reason, config (jsonb: num_modules, lessons_per_module),
+                       created_at, updated_at
+
+course_pdfs          → id, course_id, file_url, file_name, processing_status, created_at
+
 modules              → id, course_id, order_index, title
+
 lessons              → id, module_id, order_index, title, content_blocks (jsonb)
-exercises            → id, lesson_id, type, question, options (jsonb), correct_answer, explanation
-enrollments          → id, course_id, student_id, enrolled_at, status
-lesson_progress      → id, enrollment_id, lesson_id, completed_at, attempts
-exercise_attempts    → id, enrollment_id, exercise_id, answer, is_correct, attempted_at
-student_stats        → id, enrollment_id, xp_total, streak_days, last_activity_at
-jobs                 → id, type, payload (jsonb), status, created_at, updated_at
+
+exercises            → id, lesson_id, order_index, type, question,
+                       options (jsonb), correct_answer, explanation
+
+plays                → id, user_id, course_id, started_at, last_active_at, status (active|completed)
+
+lesson_progress      → id, play_id, lesson_id, completed_at, attempts
+
+exercise_attempts    → id, play_id, exercise_id, answer, is_correct, attempted_at
+
+user_stats           → id (= user_id), xp_total, streak_days, last_activity_at
+
+jobs                 → id, type, payload (jsonb), status (pending|processing|completed|failed),
+                       created_at, updated_at
 ```
 
-### 3.3 Nuxt Folder Structure
+**Key design decisions:**
+- `plays` replaces `enrollments` — a user simply "starts playing" a course, no prior enrollment needed for public courses.
+- `user_stats` is global per user (not per course), reflecting the unified learner identity.
+- `creator_id` in `courses` links to `profiles`, with no special role required to create a course.
+
+### 4.3 Row Level Security (RLS) Rules
+
+| Table | Rule |
+|---|---|
+| `courses` | Creator can read/write their own. All users can read `public` courses. Admins can read all. |
+| `course_pdfs` | Creator only. |
+| `modules / lessons / exercises` | Creator can write. Any user can read if course is `public`. |
+| `plays` | User can read/write their own plays only. |
+| `lesson_progress / exercise_attempts` | User can read/write their own records only. |
+| `user_stats` | User can read/write their own stats only. |
+| `jobs` | Server-side only (service role). |
+
+### 4.4 Nuxt Folder Structure
 
 ```
 /
 ├── pages/
 │   ├── auth/
-│   ├── producer/
-│   ├── admin/
-│   └── learn/
+│   ├── dashboard/          ← unified home for all users
+│   ├── courses/
+│   │   ├── new/            ← create course
+│   │   ├── [id]/
+│   │   │   ├── edit/       ← edit course settings
+│   │   │   ├── content/    ← edit generated content
+│   │   │   └── play/       ← lesson engine entry
+│   ├── discover/           ← browse public courses
+│   └── admin/
+│       ├── review/
+│       └── users/
 ├── server/
 │   ├── api/
 │   │   ├── courses/
 │   │   ├── modules/
 │   │   ├── lessons/
-│   │   ├── enrollments/
+│   │   ├── plays/
 │   │   ├── progress/
 │   │   └── admin/
 │   └── services/
@@ -126,70 +187,90 @@ jobs                 → id, type, payload (jsonb), status, created_at, updated_
 │       └── job-processor.ts
 ├── composables/
 ├── components/
-│   ├── producer/
-│   ├── admin/
-│   └── learn/
+│   ├── course/
+│   ├── learn/
+│   └── admin/
 ├── middleware/
 │   ├── auth.ts
-│   └── role.ts
+│   └── admin.ts
 └── supabase/
     └── migrations/
 ```
 
 ---
 
-## 4. Functional Modules
+## 5. Functional Modules
 
 ---
 
-### 4.1 Authentication Module
+### 5.1 Authentication Module
 
 #### Functional Requirements
 
 - **FR-AUTH-01:** The system must offer registration via email and password.
 - **FR-AUTH-02:** The system must support login via OAuth (Google).
-- **FR-AUTH-03:** After registration, the user must choose their role: producer or student. The admin role is assigned manually via the panel or seed script.
-- **FR-AUTH-04:** The system must protect all routes according to the user's role (authentication and authorization middleware).
+- **FR-AUTH-03:** All new accounts are assigned `role: user` by default. The admin role is assigned manually via database or admin panel.
+- **FR-AUTH-04:** The system must protect all routes via authentication middleware. Admin routes require `role: admin`.
 - **FR-AUTH-05:** The system must implement password recovery via email.
-
-#### Business Rules
-
-- A user can only have one primary role.
-- Producers do not access the student area and vice versa (unless the admin grants dual access in the future).
 
 ---
 
-### 4.2 Course Producer Module
+### 5.2 Unified User Dashboard
 
-#### 4.2.1 Course Creation and Configuration
+This is the home screen for every non-admin user after login. It consolidates the creator and learner experiences in a single view.
+
+#### Functional Requirements
+
+- **FR-DASH-01:** The dashboard must display three distinct sections:
+  1. **My Courses** — courses the user has created (with status badge: private / pending / public).
+  2. **Continue Playing** — courses the user has started playing (own or public), with progress bar.
+  3. **Discover** — a curated selection of public courses the user hasn't played yet.
+
+- **FR-DASH-02:** A prominent "Create New Course" button must be accessible from the dashboard at all times.
+
+- **FR-DASH-03:** Each course card in "My Courses" must show action buttons contextual to its status:
+  - `private` → "Edit", "Play", "Submit for Review"
+  - `pending_review` → "Preview" (read-only), "Cancel Submission"
+  - `public` → "Edit", "Play", "Make Private"
+  - `rejected` → "Edit", "View Rejection Reason", "Resubmit"
+
+- **FR-DASH-04:** The dashboard must display the user's current streak and total XP as a persistent header element.
+
+---
+
+### 5.3 Course Creation Module
+
+#### 5.3.1 Course Setup
 
 **Functional Requirements**
 
-- **FR-PROD-01:** The producer must be able to create a new course by providing: title, description, cover image, and game settings (desired number of modules, number of lessons per module).
-- **FR-PROD-02:** The producer must be able to upload one or more PDFs for the course.
-- **FR-PROD-03:** The system must accept PDFs up to 50 MB per file, with a maximum of 5 files per course.
-- **FR-PROD-04:** The system must display PDF processing status in real time (waiting, processing, completed, error).
-- **FR-PROD-05:** The producer must be able to manually trigger content generation after PDF upload.
-- **FR-PROD-06:** The system must display an estimated time to completion for the generation process.
+- **FR-CRS-01:** Any authenticated user must be able to create a new course by providing: title, description, cover image, and AI generation settings (number of modules, number of lessons per module).
+- **FR-CRS-02:** The user must be able to upload one or more PDFs as source material.
+- **FR-CRS-03:** The system must accept PDFs up to 50 MB per file, with a maximum of 5 files per course.
+- **FR-CRS-04:** The system must display PDF processing status in real time (waiting, processing, completed, error).
+- **FR-CRS-05:** The user must be able to manually trigger AI content generation after uploading PDFs.
+- **FR-CRS-06:** The system must display an estimated time to completion for content generation.
+- **FR-CRS-07:** A newly created course must always start with `visibility: private`.
 
-**AI Content Generation Pipeline**
+#### 5.3.2 AI Content Generation Pipeline
 
 ```
-1. PDF upload → Supabase Storage
+1. PDF upload → Supabase Storage (private bucket)
 2. Job registered in the `jobs` table (status: pending)
-3. Text extraction from PDF (pdf-parse)
-4. Full text sent to Gemini API in a single context window (no chunking needed for up to ~700 pages)
-5. Call to Google Gemini API (`gemini-2.5-flash`) with structured prompt:
-   - Input: extracted text + settings (N modules, M lessons/module)
+3. Text extracted from PDF (pdf-parse)
+4. Full text sent to Gemini API in a single context window
+   (no chunking needed for up to ~700 pages thanks to 1M token context)
+5. Call to Google Gemini API (gemini-2.5-flash) with structured prompt:
+   - Input: extracted text + config (N modules, M lessons/module)
    - Output: structured JSON with modules, lessons, content blocks, and exercises
 6. Generated content persisted to database tables
 7. Job status updated (completed | failed)
-8. Producer notified via Supabase Realtime
+8. User notified via Supabase Realtime
 ```
 
 **Generation Prompt (guidelines for the AI agent)**
 
-The prompt sent to the Google Gemini API must use `responseMimeType: "application/json"` with a defined `responseSchema` (Gemini's native Structured Output) to guarantee valid JSON without defensive parsing. Expected schema:
+The prompt sent to the Google Gemini API must use `responseMimeType: "application/json"` with a defined `responseSchema` (Gemini's native Structured Output) to guarantee valid JSON. Expected schema:
 
 ```json
 {
@@ -222,83 +303,61 @@ The prompt sent to the Google Gemini API must use `responseMimeType: "applicatio
 }
 ```
 
-#### 4.2.2 Generated Content Editing
+#### 5.3.3 Content Editing
 
 **Functional Requirements**
 
-- **FR-PROD-07:** The producer must be able to view generated content organized by modules and lessons.
-- **FR-PROD-08:** The producer must be able to edit the title and text of content blocks in any lesson.
-- **FR-PROD-09:** The producer must be able to add, edit, and remove exercises from any lesson.
-- **FR-PROD-10:** The producer must be able to reorder modules and lessons via drag-and-drop.
-- **FR-PROD-11:** The producer must be able to regenerate content for a specific module without losing the rest.
-- **FR-PROD-12:** All changes must be auto-saved (autosave with 2s debounce).
+- **FR-CRS-08:** The user must be able to view generated content organized by modules and lessons.
+- **FR-CRS-09:** The user must be able to edit the title and text of any content block.
+- **FR-CRS-10:** The user must be able to add, edit, and remove exercises from any lesson.
+- **FR-CRS-11:** The user must be able to reorder modules and lessons via drag-and-drop.
+- **FR-CRS-12:** The user must be able to regenerate content for a specific module without affecting the rest.
+- **FR-CRS-13:** All changes must be auto-saved (autosave with 2s debounce).
 
-#### 4.2.3 Student and Enrollment Management
-
-**Functional Requirements**
-
-- **FR-PROD-13:** The producer must be able to invite students by email to register on the platform.
-- **FR-PROD-14:** The producer must be able to enroll existing users in their courses.
-- **FR-PROD-15:** The producer must be able to unenroll students from their courses.
-- **FR-PROD-16:** The producer must be able to view the list of enrolled students per course, with enrollment date and overall progress (%).
-- **FR-PROD-17:** The producer must not be able to view sensitive personal data beyond student name and email.
-
-#### 4.2.4 Submission for Review
+#### 5.3.4 Visibility and Publication
 
 **Functional Requirements**
 
-- **FR-PROD-18:** The producer must be able to submit the course for admin review when the content is ready.
-- **FR-PROD-19:** After submission, the course enters `pending_review` status and cannot be edited until a decision is made by the admin.
-- **FR-PROD-20:** The producer must receive a notification when the course is approved or rejected, including the rejection reason when applicable.
-
-#### 4.2.5 Producer Dashboard
-
-**Functional Requirements**
-
-- **FR-PROD-21:** The producer must have a dashboard showing: list of courses (with status), active students, and average progress per course.
+- **FR-CRS-14:** From the course settings page, the user must be able to submit the course for public review by changing its visibility to `pending_review`.
+- **FR-CRS-15:** A course in `pending_review` must be locked for editing (read-only) until a decision is made.
+- **FR-CRS-16:** The user must be notified when their course is approved (→ `public`) or rejected (→ `private` with reason).
+- **FR-CRS-17:** The user must be able to cancel a pending submission, reverting the course to `private`.
+- **FR-CRS-18:** The user must be able to make a `public` course private again at any time.
+- **FR-CRS-19:** The user must be able to delete any of their own courses regardless of status, with a confirmation prompt.
 
 ---
 
-### 4.3 Administrator Module
+### 5.4 Course Discovery Module
 
 **Functional Requirements**
 
-- **FR-ADM-01:** The admin must have access to a panel listing all platform courses, filterable by status.
-- **FR-ADM-02:** The admin must be able to view the full content of any course before making a decision.
-- **FR-ADM-03:** The admin must be able to approve a course, changing its status to `approved` and making it available to enrolled students.
-- **FR-ADM-04:** The admin must be able to reject a course, providing a reason (free text), changing the status to `rejected`, and returning it to the producer for editing.
-- **FR-ADM-05:** The admin must be able to manage all users: list, activate, deactivate, and change roles.
-- **FR-ADM-06:** The admin must have an overview of platform metrics: total courses, users, enrollments, and overall completion rate.
-- **FR-ADM-07:** The admin must be able to impersonate a user (view-only mode) for support purposes.
+- **FR-DSC-01:** Any authenticated user must be able to browse a public course catalog showing only `public` courses.
+- **FR-DSC-02:** The catalog must support search by title and description keywords.
+- **FR-DSC-03:** Each course card in the catalog must show: cover image, title, creator name, number of modules, and average completion rate.
+- **FR-DSC-04:** The user must be able to start playing any public course directly from the catalog.
+- **FR-DSC-05:** Courses created by the current user must be excluded from the discovery feed (they appear in "My Courses" instead).
 
 ---
 
-### 4.4 Student Module (Learning Experience)
+### 5.5 Learning Module (Lesson Engine)
 
-#### 4.4.1 Student Home
-
-**Functional Requirements**
-
-- **FR-STU-01:** The student must see a dashboard with all their enrolled courses, with a progress bar and next-step indicator.
-- **FR-STU-02:** The student must see their current streak (consecutive study days) with prominent visual display.
-- **FR-STU-03:** The student must see their total XP and ranking position within each course (among enrolled students).
-
-#### 4.4.2 Course Map
+#### 5.5.1 Course Map
 
 **Functional Requirements**
 
-- **FR-STU-04:** When entering a course, the student must see a visual map in Duolingo style: modules as "islands" or checkpoints on a vertical trail.
-- **FR-STU-05:** Completed modules and lessons must be displayed with a distinct visual state (color, icon).
-- **FR-STU-06:** The student can only access the next lesson after completing the previous one (sequential unlocking).
-- **FR-STU-07:** The student must be able to freely revisit already completed lessons.
+- **FR-LRN-01:** When entering a course to play, the user must see a visual map in Duolingo style: modules as checkpoints on a vertical trail.
+- **FR-LRN-02:** Completed modules and lessons must display a distinct visual state (color, icon).
+- **FR-LRN-03:** The user can only access the next lesson after completing the previous one (sequential unlocking).
+- **FR-LRN-04:** The user must be able to freely revisit already completed lessons for review.
+- **FR-LRN-05:** A "play" session is automatically created the first time a user starts a course (`plays` record). Progress is tracked per play session.
 
-#### 4.4.3 Lesson Engine
+#### 5.5.2 Lesson Engine
 
 **Functional Requirements**
 
-- **FR-STU-08:** Each lesson consists of a sequence of screens alternating between content blocks and exercises.
-- **FR-STU-09:** The lesson must have a progress bar at the top indicating how many screens remain.
-- **FR-STU-10:** The student must be able to exit a lesson and resume from where they left off.
+- **FR-LRN-06:** Each lesson consists of a sequence of screens alternating between content blocks and exercises.
+- **FR-LRN-07:** The lesson must display a progress bar at the top indicating screens remaining.
+- **FR-LRN-08:** The user must be able to exit a lesson and resume from where they left off.
 
 **Screen Types**
 
@@ -307,143 +366,176 @@ The prompt sent to the Google Gemini API must use `responseMimeType: "applicatio
 | `content_text` | Explanatory text with rich formatting |
 | `content_tip` | Tip or highlight in a special card (e.g., "Did you know?") |
 | `exercise_multiple_choice` | Question with 4 options, only one correct |
-| `exercise_true_false` | Statement to be judged as true or false |
+| `exercise_true_false` | Statement to judge as true or false |
 | `exercise_fill_blank` | Text with a blank to fill in |
 | `exercise_ordering` | Ordering items/sentences in the correct sequence |
 
 **Exercise Functional Requirements**
 
-- **FR-STU-11:** When answering an exercise, the system must display immediate feedback: green screen with positive reinforcement (correct) or red screen with the correct answer and explanation (incorrect).
-- **FR-STU-12:** The student must have a "lives" (hearts) system: starts with 5 lives; each mistake removes one life; when all lives are lost, the lesson is interrupted and can be resumed after 30 minutes or immediately by using a power-up.
-- **FR-STU-13:** Upon completing a lesson, the student must see a celebration screen showing XP earned and an animation.
+- **FR-LRN-09:** On answering an exercise, the system must display immediate feedback: green screen with positive reinforcement (correct) or red screen with the correct answer and explanation (incorrect).
+- **FR-LRN-10:** The user must have a lives (hearts) system: starts with 5 lives per lesson; each mistake removes one life; at zero lives the lesson pauses and can be resumed after 30 minutes or immediately via a power-up.
+- **FR-LRN-11:** Upon completing a lesson, the user sees a celebration screen with XP earned and an animation.
+- **FR-LRN-12:** The creator of a course playing their own course follows the same lesson engine as any other player — no special mode.
 
-#### 4.4.4 Gamification System
+---
+
+### 5.6 Gamification System
 
 **Functional Requirements**
 
 - **FR-GAM-01 — XP (Experience Points):**
-  - Lesson completed: +10 XP base
-  - Exercise answered correctly on first attempt: +5 XP
-  - Lesson completed without any mistakes (perfect lesson): +20 XP bonus
+  - Lesson completed: +10 XP
+  - Exercise correct on first attempt: +5 XP
+  - Perfect lesson (no mistakes): +20 XP bonus
+  - XP is global per user, regardless of which course was played.
 
 - **FR-GAM-02 — Streaks:**
-  - Each consecutive day of activity increments the streak.
-  - The streak resets if the student does not complete at least one lesson per day.
-  - Current streak displayed prominently on the dashboard.
+  - Each consecutive day with at least one completed lesson increments the streak.
+  - Missing a day resets the streak to zero.
+  - Current streak is displayed prominently on the dashboard header.
 
-- **FR-GAM-03 — Achievements (Badges):**
-  - "First Lesson": complete the first lesson.
-  - "Perfect Week": 7-day streak.
+- **FR-GAM-03 — Badges:**
+  - "First Lesson": complete any lesson for the first time.
+  - "Perfect Week": maintain a 7-day streak.
   - "Flawless": complete 5 lessons without any mistakes.
   - "Marathon": complete 3 lessons in a single day.
   - "Module Master": complete all lessons in a module.
-  - "Course Graduate": complete 100% of a course.
+  - "Course Graduate": complete 100% of any course.
+  - "Creator": publish a course that gets approved.
 
 - **FR-GAM-04 — Leaderboard:**
-  - Weekly ranking by XP, scoped per course.
-  - Display of top 10 students with the current student's position.
+  - Weekly global leaderboard ranked by XP earned that week.
+  - Displayed on the dashboard with the current user's position highlighted.
 
 - **FR-GAM-05 — Power-ups:**
-  - "Shield": protects against losing a life on one incorrect answer (limit: 1 per lesson).
-  - Power-ups are earned by reaching XP milestones.
+  - "Shield": prevents losing a life on one wrong answer (max 1 per lesson).
+  - Power-ups are earned at XP milestones.
 
 ---
 
-## 5. Non-Functional Requirements
+### 5.7 Admin Module
 
-### 5.1 Performance
+**Functional Requirements**
 
-- **NFR-01:** Initial page load time must be under 3 seconds on a 4G connection.
-- **NFR-02:** Transitions between exercise screens must occur in under 300ms.
-- **NFR-03:** Extraction and processing of a 10 MB PDF must complete in under 2 minutes.
+- **FR-ADM-01:** The admin must have a dedicated panel listing all courses with `pending_review` status, sorted by submission date (oldest first).
+- **FR-ADM-02:** The admin must be able to fully preview any course's generated content before deciding.
+- **FR-ADM-03:** The admin must be able to approve a course, setting its visibility to `public`. The creator is notified.
+- **FR-ADM-04:** The admin must be able to reject a course, providing a mandatory written reason. The course reverts to `private` and the creator is notified with the reason.
+- **FR-ADM-05:** The admin must be able to view all platform users, with the ability to deactivate accounts or change roles.
+- **FR-ADM-06:** The admin must be able to pull any `public` course back to `private` (e.g., for policy violations), notifying the creator.
+- **FR-ADM-07:** The admin dashboard must display platform metrics: total users, total courses by visibility status, total plays, and global completion rate.
 
-### 5.2 Security
+---
+
+## 6. Non-Functional Requirements
+
+### 6.1 Performance
+
+- **NFR-01:** Initial page load must be under 3 seconds on a 4G connection.
+- **NFR-02:** Exercise screen transitions must occur in under 300ms.
+- **NFR-03:** Text extraction and processing of a 10 MB PDF must complete in under 2 minutes.
+
+### 6.2 Security
 
 - **NFR-04:** All API routes must verify authentication via JWT (Supabase Auth).
-- **NFR-05:** The system must implement Row Level Security (RLS) in Supabase to ensure users only access data they are authorized for.
-- **NFR-06:** PDF uploads must be stored in private Supabase Storage buckets with signed, expirable URLs.
-- **NFR-07:** The Gemini API key must be stored exclusively as a server-side environment variable and never exposed to the client.
+- **NFR-05:** RLS must be enabled on all tables — users can only access data they own or that is explicitly public.
+- **NFR-06:** PDF files must be stored in private Supabase Storage buckets, accessed via signed expirable URLs.
+- **NFR-07:** The Gemini API key must be stored exclusively as a server-side environment variable (`GEMINI_API_KEY`), never sent to the client.
 
-### 5.3 Accessibility
+### 6.3 Accessibility
 
 - **NFR-08:** The interface must follow WCAG 2.1 Level AA guidelines.
 - **NFR-09:** All interactive elements must be keyboard-navigable.
 - **NFR-10:** Minimum text contrast ratio must be 4.5:1.
 
-### 5.4 Responsiveness
+### 6.4 Responsiveness
 
-- **NFR-11:** The student area (lesson engine) must be fully functional on mobile devices (minimum breakpoint: 375px).
-- **NFR-12:** The producer area must be optimized for desktop with tablet support.
+- **NFR-11:** The lesson engine must be fully functional on mobile (minimum breakpoint: 375px).
+- **NFR-12:** The course creation and content editing flow must be optimized for desktop with tablet support.
 
-### 5.5 Scalability
+### 6.5 Scalability
 
-- **NFR-13:** The content generation system must support multiple parallel jobs without degradation.
-- **NFR-14:** The architecture must support multi-tenancy from day one via RLS.
+- **NFR-13:** The content generation system must support multiple concurrent jobs without degradation.
+- **NFR-14:** The architecture must support multi-tenancy from day one via RLS (each user's data is fully isolated by default).
 
 ---
 
-## 6. UX Guidelines
+## 7. UX Guidelines
 
-### 6.1 Visual Identity
+### 7.1 Visual Identity
 
 - Color palette: vibrant, Duolingo-inspired — primary green (#58CC02), action blue (#1CB0F6), highlight yellow (#FFC800), error red (#FF4B4B).
 - Typography: rounded sans-serif, bold weight for exercise titles.
 - Icons: Lucide Icons or Heroicons.
-- Illustrations: simple, friendly mascot character (bird, robot, or geometric character).
+- Illustrations: simple, friendly mascot character.
 
-### 6.2 Design Principles
+### 7.2 Design Principles
 
-- **Immediate feedback:** every student action must have an instant visual response.
-- **Celebrate progress:** subtle animations and sounds on correct answers, lesson completion, and badge unlocks.
-- **Clarity over complexity:** the interface must feel simple even if the underlying system is complex.
-- **Mobile-first for students:** the lesson engine must be designed with mobile as the primary platform.
-
----
-
-## 7. Main User Flows
-
-### 7.1 Producer Flow: Create and Publish a Course
-
-```
-1. Login → Producer Dashboard
-2. Click "New Course"
-3. Fill in title, description, cover image
-4. Configure: number of modules and lessons per module
-5. Upload PDFs
-6. Wait for processing (polling / realtime)
-7. Review and edit generated content
-8. Enroll students
-9. Submit for review
-10. Wait for admin approval
-11. Course published → students notified
-```
-
-### 7.2 Admin Flow: Review a Course
-
-```
-1. Login → Admin Dashboard
-2. View "pending_review" course queue
-3. Open course → review content
-4. Approve (course moves to "approved") OR Reject (provide reason)
-5. Producer receives notification
-```
-
-### 7.3 Student Flow: Study a Lesson
-
-```
-1. Login → Student Dashboard
-2. Select course
-3. View course map → select next available lesson
-4. Lesson engine starts
-5. Screen sequence: content → exercise → content → exercise...
-6. Feedback on each exercise
-7. Completion screen with XP earned
-8. Return to map with updated progress
-```
+- **One home, two hats:** the dashboard must feel natural for both creating and learning without forcing the user to "switch modes."
+- **Immediate feedback:** every learner action must have an instant visual response.
+- **Celebrate progress:** animations and sounds on correct answers, lesson completion, badge unlocks, and course publication approval.
+- **Mobile-first for learning:** the lesson engine is designed mobile-first.
+- **Desktop-first for creation:** the course creation and content editor flows prioritize desktop usability.
 
 ---
 
-## 8. Page Structure (Sitemap)
+## 8. Main User Flows
+
+### 8.1 New User First Experience
+
+```
+1. Register → lands on dashboard
+2. Dashboard shows: empty "My Courses", empty "Continue Playing", "Discover" feed with public courses
+3. Two clear CTAs: "Create Your First Course" and "Explore Public Courses"
+```
+
+### 8.2 Create and Play a Private Course
+
+```
+1. Click "Create New Course"
+2. Fill title, description, cover image, AI settings
+3. Upload PDFs → trigger generation
+4. Wait for processing (realtime status updates)
+5. Review and edit generated content
+6. Click "Play" on the course card → lesson engine starts
+7. Progress is tracked; user earns XP and streaks
+```
+
+### 8.3 Publish a Course
+
+```
+1. From course settings, click "Submit for Public Review"
+2. Course status → pending_review (locked for editing)
+3. Admin receives notification in admin panel
+4. Admin previews content → Approves or Rejects
+5a. Approved → course status = public, creator notified, course appears in discovery feed
+5b. Rejected → course reverts to private, creator notified with reason, can edit and resubmit
+```
+
+### 8.4 Discover and Play a Public Course
+
+```
+1. User opens Discover page or sees recommendations on dashboard
+2. Browses or searches public courses
+3. Clicks "Play" on a course → play session created
+4. Course map displayed → selects first available lesson
+5. Lesson engine runs → XP and progress tracked
+```
+
+### 8.5 Admin Review Flow
+
+```
+1. Admin logs in → Admin Dashboard
+2. Views pending_review queue (sorted oldest first)
+3. Opens course → reads all generated content
+4. Approves → course goes public, creator notified
+   OR
+   Rejects → writes reason, course goes private, creator notified
+```
+
+---
+
+## 9. Page Structure (Sitemap)
 
 ```
 /
@@ -451,91 +543,104 @@ The prompt sent to the Google Gemini API must use `responseMimeType: "applicatio
 ├── /auth/register
 ├── /auth/forgot-password
 │
-├── /producer/                          ← Producer Dashboard
-│   ├── /producer/courses               ← Course list
-│   ├── /producer/courses/new           ← Create course
-│   ├── /producer/courses/[id]/edit     ← Edit settings
-│   ├── /producer/courses/[id]/content  ← Generated content editor
-│   └── /producer/courses/[id]/students ← Student management
+├── /dashboard                              ← Unified home (all users)
 │
-├── /admin/                             ← Admin Dashboard
-│   ├── /admin/courses                  ← Review queue and all courses
-│   ├── /admin/courses/[id]/review      ← Review screen
-│   └── /admin/users                    ← User management
+├── /courses/
+│   ├── /courses/new                        ← Create course
+│   └── /courses/[id]/
+│       ├── edit                            ← Edit course settings & visibility
+│       ├── content                         ← Edit generated content
+│       └── play                            ← Course map + lesson engine entry
 │
-└── /learn/                             ← Student Dashboard
-    ├── /learn/courses                  ← Enrolled courses
-    ├── /learn/courses/[id]             ← Course map
-    └── /learn/courses/[id]/lessons/[lessonId] ← Lesson engine
+├── /discover                               ← Browse public courses
+│
+└── /admin/                                 ← Admin only
+    ├── review                              ← Pending review queue
+    ├── review/[courseId]                   ← Course review detail
+    └── users                              ← User management
 ```
 
 ---
 
-## 9. API Endpoints (Nuxt Server Routes)
+## 10. API Endpoints (Nuxt Server Routes)
+
+### Auth / Profile
+```
+GET    /api/profile                          ← Get current user profile
+PUT    /api/profile                          ← Update profile
+```
 
 ### Courses
 ```
 POST   /api/courses                          ← Create course
-GET    /api/courses                          ← List producer's courses
+GET    /api/courses/mine                     ← List user's own courses
+GET    /api/courses/discover                 ← List public courses (with search/filter)
 GET    /api/courses/[id]                     ← Course details
-PUT    /api/courses/[id]                     ← Update course
-POST   /api/courses/[id]/submit              ← Submit for review
-POST   /api/courses/[id]/generate            ← Trigger content generation
+PUT    /api/courses/[id]                     ← Update course settings
+DELETE /api/courses/[id]                     ← Delete course (creator only)
+POST   /api/courses/[id]/generate            ← Trigger AI content generation
+POST   /api/courses/[id]/submit              ← Submit for public review (→ pending_review)
+POST   /api/courses/[id]/cancel-submission   ← Cancel submission (→ private)
+POST   /api/courses/[id]/make-private        ← Pull public course back to private
 ```
 
 ### Modules and Lessons
 ```
 GET    /api/courses/[id]/modules             ← List modules
 PUT    /api/modules/[id]                     ← Edit module
+DELETE /api/modules/[id]                     ← Delete module
 POST   /api/modules/[id]/lessons             ← Create lesson
 PUT    /api/lessons/[id]                     ← Edit lesson
+DELETE /api/lessons/[id]                     ← Delete lesson
 PUT    /api/lessons/[id]/exercises           ← Update lesson exercises
 ```
 
-### Enrollments
+### Playing
 ```
-POST   /api/courses/[id]/enroll              ← Enroll student
-DELETE /api/courses/[id]/enroll/[studentId]  ← Unenroll student
-GET    /api/courses/[id]/students            ← List enrolled students
+POST   /api/plays                            ← Start playing a course (creates play record)
+GET    /api/plays/[courseId]                 ← Get user's play record for a course
+POST   /api/plays/[playId]/lessons/[id]/complete   ← Mark lesson as completed
+POST   /api/plays/[playId]/exercises/[id]/attempt  ← Record exercise attempt
+GET    /api/plays/[playId]/progress          ← Full progress for a play session
 ```
 
-### Progress (Student)
+### Stats and Gamification
 ```
-GET    /api/learn/courses                    ← Student's courses with progress
-POST   /api/learn/lessons/[id]/complete      ← Mark lesson as completed
-POST   /api/learn/exercises/[id]/attempt     ← Record exercise attempt
-GET    /api/learn/courses/[id]/stats         ← Student stats for course
+GET    /api/stats/me                         ← Current user's XP, streak, badges
+GET    /api/stats/leaderboard                ← Weekly global leaderboard
 ```
 
 ### Admin
 ```
-GET    /api/admin/courses                    ← All courses
-POST   /api/admin/courses/[id]/approve       ← Approve course
-POST   /api/admin/courses/[id]/reject        ← Reject course
+GET    /api/admin/courses                    ← All courses (filterable by visibility)
+POST   /api/admin/courses/[id]/approve       ← Approve course (→ public)
+POST   /api/admin/courses/[id]/reject        ← Reject course (→ private + reason)
+POST   /api/admin/courses/[id]/make-private  ← Force course back to private
 GET    /api/admin/users                      ← All users
-PUT    /api/admin/users/[id]                 ← Edit user
+PUT    /api/admin/users/[id]                 ← Edit user (role, status)
+GET    /api/admin/metrics                    ← Platform metrics
 ```
 
 ---
 
-## 10. External Integrations
+## 11. External Integrations
 
-### 10.1 Google Gemini API
+### 11.1 Google Gemini API
 
 - **Primary model:** `gemini-2.5-flash`
 - **Usage:** Generation of course structure (modules, lessons, exercises) from text extracted from PDFs.
-- **Authentication:** API Key via `GEMINI_API_KEY` environment variable (server-side only, never exposed to the client).
+- **Authentication:** API Key via `GEMINI_API_KEY` environment variable (server-side only).
 - **SDK:** `@google/generative-ai` (official Node.js package).
-- **Structured Output:** Use `responseMimeType: "application/json"` + `responseSchema` to guarantee valid JSON without defensive parsing.
+- **Structured Output:** Use `responseMimeType: "application/json"` + `responseSchema` to guarantee valid JSON.
 - **Long context:** The 1M token context window allows sending the full PDF text in a single API call, eliminating the need for chunking for most documents.
 - **Estimated cost per generation:** ~$0.01–$0.03 per module generated (20–40k input tokens + 5–10k output tokens).
-- **Free tier:** Available during development — 15 RPM and 1,000 requests/day at no cost (Google AI Studio).
-- **Considerations:** Implement retry with exponential backoff; log tokens consumed per job for cost tracking; set `temperature: 0.4` for higher structural consistency.
+- **Free tier:** 15 RPM and 1,000 requests/day at no cost during development (Google AI Studio).
+- **Considerations:** Implement retry with exponential backoff; log tokens per job for cost tracking; use `temperature: 0.4` for structural consistency.
 
 **Sample call (reference for the AI agent):**
 
 ```typescript
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -552,99 +657,124 @@ const result = await model.generateContent(prompt);
 const course = JSON.parse(result.response.text());
 ```
 
-### 10.2 Supabase
+### 11.2 Supabase
 
 - **Auth:** Session and user management.
-- **Database:** PostgreSQL with RLS enabled.
-- **Storage:** Buckets for PDFs and cover images.
-- **Realtime:** Job progress notifications to the producer.
+- **Database:** PostgreSQL with RLS enabled on all tables.
+- **Storage:** Private buckets for PDFs; public bucket for course cover images.
+- **Realtime:** Job progress notifications during content generation.
 
 ---
 
-## 11. Error Handling Policy
+## 12. Error Handling Policy
 
 | Scenario | Behavior |
 |---|---|
-| Corrupted or unreadable PDF | Job marked as `failed`; producer notified with guidance to re-upload |
-| Google Gemini API error | Automatic retry 3x with exponential backoff; after total failure, notify producer and mark job as `failed` |
-| Generation timeout | Job expired after 15 min; producer can reprocess |
-| Form validation error | Inline field feedback, never erase already-filled data |
+| Corrupted or unreadable PDF | Job marked as `failed`; user notified with guidance to re-upload |
+| Google Gemini API error | Automatic retry 3x with exponential backoff; after total failure, notify user and mark job `failed` |
+| Generation timeout | Job expired after 15 min; user can manually reprocess |
+| Form validation error | Inline field feedback; never erase already-filled data |
+| Unauthorized access to private course | Return 403; redirect to dashboard |
 | Expired session | Redirect to login with return to original page after authentication |
 
 ---
 
-## 12. Development Phases (Suggested Roadmap)
+## 13. Development Phases (Suggested Roadmap)
 
-### Phase 1 — MVP (Minimum Viable Product)
-- Authentication and roles (producer, student, admin)
-- Course creation + PDF upload
-- AI content generation pipeline
-- Basic generated content editor
-- Lesson engine with multiple choice and true/false
-- Lesson progress and completion
-- Admin approval flow
+### Phase 1 — MVP
+- Authentication (email/password + Google OAuth)
+- Unified dashboard (My Courses, Continue Playing, Discover)
+- Course creation + PDF upload + AI generation pipeline
+- Basic content editor
+- Lesson engine: multiple choice and true/false exercises
+- Private play with progress tracking
+- Visibility flow: private → pending → public / rejected
+- Admin review panel
 
 ### Phase 2 — Full Gamification
 - All exercise types (fill_blank, ordering)
 - Lives (hearts) system
-- XP, streaks, badges, and leaderboard
+- XP, streaks, all badges, leaderboard
 - Power-ups
 - Animated celebration screens
 
-### Phase 3 — Advanced Management
-- Analytics dashboard for producers
-- Student invitation by email
+### Phase 3 — Social and Discovery
+- Public course catalog with search and filters
+- Creator profile pages (public courses by a user)
+- Course ratings and comments
+- "Featured" courses curated by admin
+
+### Phase 4 — Advanced Creation Tools
+- Drag-and-drop content editor
 - Partial module regeneration
-- Drag-and-drop in content editor
-- Push notifications (PWA)
+- Analytics for course creators (plays, completion rate per lesson)
+- Push notifications / PWA
 
-### Phase 4 — Scale
+### Phase 5 — Scale
 - Multi-language support (i18n)
-- External LMS integration (SCORM export)
+- SCORM export for LMS integration
 - Public API for external integrations
-- Plans and billing (Stripe)
+- Monetization (premium courses, Stripe billing)
 
 ---
 
-## 13. Acceptance Criteria by Module
+## 14. Acceptance Criteria by Module
 
-### AC-01: Content Generation
-- [ ] Given a valid PDF, the system must generate content in under 5 minutes per module.
-- [ ] The generated JSON must be valid and correctly persisted in the database tables.
-- [ ] The producer must be notified upon completion of processing.
+### AC-01: Course Creation and Generation
+- [ ] Any authenticated user can create a course from the dashboard.
+- [ ] Given a valid PDF, the system generates content in under 5 minutes per module.
+- [ ] The generated JSON is valid and correctly persisted to the database.
+- [ ] The user is notified via Realtime when generation completes or fails.
+- [ ] A newly created course always starts as `private`.
 
-### AC-02: Lesson Engine
-- [ ] The student must be able to complete a lesson from start to finish without interface errors.
-- [ ] Progress must be saved if the student exits mid-lesson.
-- [ ] Correct/incorrect feedback must appear within 300ms of the student's response.
+### AC-02: Visibility Flow
+- [ ] The user can submit a course for review; it immediately becomes `pending_review` and is locked for editing.
+- [ ] The user can cancel the submission; the course reverts to `private` and becomes editable again.
+- [ ] After admin approval, the course appears in the public discovery catalog.
+- [ ] After admin rejection, the course reverts to `private` with the rejection reason visible to the creator.
 
-### AC-03: Gamification
-- [ ] XP must be credited immediately upon lesson completion.
-- [ ] Streaks must be updated correctly at midnight UTC.
-- [ ] Badges must be automatically awarded upon meeting their criteria.
+### AC-03: Lesson Engine
+- [ ] The user can complete a lesson from start to finish without interface errors.
+- [ ] Progress is saved if the user exits mid-lesson.
+- [ ] Correct/incorrect feedback appears within 300ms of the user's response.
+- [ ] The course creator playing their own course goes through the same lesson engine as any other user.
 
-### AC-04: Approval Flow
-- [ ] Courses with `draft` status must not be visible to students.
-- [ ] Only courses with `approved` status must appear for enrolled students.
-- [ ] The producer must not be able to edit a course with `pending_review` status.
+### AC-04: Gamification
+- [ ] XP is credited immediately upon lesson completion.
+- [ ] Streaks update correctly at midnight UTC.
+- [ ] Badges are automatically awarded upon meeting their criteria.
+- [ ] The "Creator" badge is awarded when a course is approved for the first time.
+
+### AC-05: Discovery
+- [ ] Only `public` courses appear in the discovery feed.
+- [ ] A user's own courses do not appear in the discovery feed (they appear in "My Courses").
+- [ ] Any user can start playing a public course directly from the discovery page.
+
+### AC-06: Admin
+- [ ] Admin can approve a pending course; it immediately becomes public.
+- [ ] Admin can reject a course with a required written reason; it reverts to private.
+- [ ] Admin can force any public course back to private.
+- [ ] Non-admin users cannot access any `/admin/*` route.
 
 ---
 
-## 14. Glossary
+## 15. Glossary
 
 | Term | Definition |
 |---|---|
-| **Course** | Set of modules created by a producer from PDFs |
+| **Course** | A set of modules auto-generated from PDFs by a user |
 | **Module** | Thematic grouping of lessons within a course |
-| **Lesson** | Minimum learning unit, composed of content blocks and exercises |
-| **Exercise** | Interactive question to validate the student's knowledge |
-| **Screen** | Individual screen within the lesson engine (content or exercise) |
-| **XP** | Experience points accumulated by the student |
-| **Streak** | Sequence of consecutive days of student activity |
+| **Lesson** | Minimum learning unit composed of content blocks and exercises |
+| **Exercise** | Interactive question to validate the learner's knowledge |
+| **Screen** | Individual screen in the lesson engine (content or exercise) |
+| **Play** | A user's active learning session for a specific course |
+| **Visibility** | A course's access state: private, pending_review, public, or rejected |
+| **XP** | Global experience points accumulated by a user across all courses |
+| **Streak** | Number of consecutive days with at least one completed lesson |
 | **Badge** | Achievement unlocked upon reaching specific milestones |
-| **Heart (Life)** | Resource the student loses when answering incorrectly; limits attempts without a break |
-| **Job** | Asynchronous processing task (PDF extraction, content generation) |
-| **RLS** | Row Level Security — row-level access control mechanism in Supabase |
+| **Heart (Life)** | Resource lost on incorrect answers; limits attempts without a pause |
+| **Job** | Asynchronous background task (PDF extraction, AI generation) |
+| **RLS** | Row Level Security — Supabase's row-level data access control mechanism |
 
 ---
 
