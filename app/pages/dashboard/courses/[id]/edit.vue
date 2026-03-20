@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { CourseWithSignedCover } from '../../../../../types/course'
+import type { CourseWithSignedCover } from '@@/types/course'
 
 definePageMeta({ middleware: ['auth', 'role'] })
 
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id as string
-
+ 
 const { data: course, pending, error } = await useFetch<CourseWithSignedCover>(`/api/courses/${id}`)
 
 const title = ref('')
@@ -76,7 +76,7 @@ async function handleSubmit() {
       body: formData,
     } as any)
 
-    await router.replace('/producer')
+    await router.replace('/dashboard')
   } catch (err: any) {
     const msg = err?.data?.message ?? err?.message ?? err?.statusMessage ?? 'Failed to update course.'
     errorMessage.value = msg
@@ -90,7 +90,7 @@ async function handleSubmit() {
   <div class="min-h-screen bg-slate-950 text-slate-50">
     <div class="max-w-lg mx-auto px-4 py-8">
       <div class="mb-6">
-        <NuxtLink to="/producer" class="text-sm text-slate-400 hover:text-slate-300">
+        <NuxtLink to="/dashboard" class="text-sm text-slate-400 hover:text-slate-300">
           ← Back to dashboard
         </NuxtLink>
       </div>
@@ -101,7 +101,7 @@ async function handleSubmit() {
 
       <div v-else-if="error" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-8 text-center text-red-400">
         <p>{{ error.message || 'Failed to load course details.' }}</p>
-        <NuxtLink to="/producer" class="mt-4 inline-block text-sm text-emerald-400">
+        <NuxtLink to="/dashboard" class="mt-4 inline-block text-sm text-emerald-400">
           Back to dashboard
         </NuxtLink>
       </div>

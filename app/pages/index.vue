@@ -12,19 +12,12 @@ watch(
     }
 
     const role = profile.value?.role
-    if (!role) {
-      return navigateTo('/auth/choose-role')
-    }
     
-    if (role === 'producer') {
-      return navigateTo('/producer')
-    } else if (role === 'student') {
-      return navigateTo('/learn')
-    } else if (role === 'admin') {
+    if (role === 'admin') {
       return navigateTo('/admin')
     }
 
-    return navigateTo('/auth/choose-role')
+    return navigateTo('/dashboard')
   },
   { immediate: true },
 )

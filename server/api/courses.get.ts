@@ -8,7 +8,7 @@ export default defineEventHandler(async (event): Promise<CourseWithSignedCover[]
   const user = await requireUser(event)
   const client = await serverSupabaseClient(event)
 
-  await requireRole(event, client, user.id, ['producer', 'admin'])
+  await requireRole(event, client, user.id)
 
   return await listProducerCourses(client, user.id)
 })

@@ -70,7 +70,7 @@ async function handleSubmit() {
       body: formData,
     })
 
-    await router.replace('/producer')
+    await router.replace('/dashboard')
   } catch (err: any) {
     const msg = err?.data?.message ?? err?.message ?? err?.statusMessage ?? 'Failed to create course.'
     errorMessage.value = msg
@@ -84,7 +84,7 @@ async function handleSubmit() {
   <div class="min-h-screen bg-slate-950 text-slate-50">
     <div class="max-w-lg mx-auto px-4 py-8">
       <div class="mb-6">
-        <NuxtLink to="/producer" class="text-sm text-slate-400 hover:text-slate-300">
+        <NuxtLink to="/dashboard" class="text-sm text-slate-400 hover:text-slate-300">
           ← Back to dashboard
         </NuxtLink>
       </div>

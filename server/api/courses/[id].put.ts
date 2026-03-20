@@ -10,7 +10,7 @@ export default defineEventHandler(async (event): Promise<Course> => {
   const user = await requireUser(event)
   const client = await serverSupabaseClient(event)
 
-  await requireRole(event, client, user.id, ['producer', 'admin'])
+  await requireRole(event, client, user.id)
 
   const id = getRouterParam(event, 'id')
   if (!id) {
