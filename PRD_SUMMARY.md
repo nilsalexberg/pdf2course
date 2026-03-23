@@ -86,14 +86,57 @@ A platform where any user can upload PDFs and automatically generate a Duolingo-
 - `jobs` — async queue for PDF extraction and AI generation.
 
 **AI Generation Pipeline:**
-1. User uploads PDF → stored in private Supabase Storage bucket.
-2. Text extracted via `pdf-parse`.
-3. Full text sent to `gemini-2.5-flash` in a single call (1M token context — no chunking needed for most documents).
-4. Gemini returns structured JSON (modules → lessons → content blocks + exercises) via native Structured Output (`responseMimeType: "application/json"`).
-5. Content persisted to database; user notified via Supabase Realtime.
+
+1. User uploads PDFs → stored in private Supabase Storage bucket.
+2. User clicks "Generate Course":
+   - Backend creates a `generation_id`
+   - Course status set to `processing`
+   - Async job is enqueued
+3. PDF Processing:
+   - Text extracted via `pdf-parse`
+   - Text is cleaned (whitespace, artifacts, basic normalization)
+4. Chunking:
+   - Documents split into chunks (~500–1000 tokens with overlap)
+   - Chunks stored in database
+5. Embeddings (RAG):
+   - Embeddings generated for each chunk
+   - Stored for future semantic retrieval (lesson generation phase)
+6. Lightweight Semantic Extraction:
+   - Keyphrases extracted per chunk (e.g. via KeyBERT or similar)
+   - Used to reduce noise and guide summarization
+7. Summarization Layer:
+   - Chunk-level summaries (optional / optimized)
+   - Document-level summaries generated
+   - Final course-level summary created:
+     - key topics
+     - themes
+     - estimated difficulty
+8. Course Structure Generation:
+   - Course status → `generating_structure`
+   - Course summary + `generation_settings` sent to `gemini-2.5-flash`
+   - Model returns structured JSON:
+     - modules
+     - lessons (title + objective only)
+9. Persistence:
+   - Modules and lessons saved to database
+   - Lessons created with status `not_generated` (no content yet)
+10. Completion:
+   - Course status → `ready`
+   - User notified via Supabase Realtime
+
+**Important Notes:**
+
+- Lesson content (text, quizzes, etc.) is generated lazily:
+  - Triggered when the user starts a lesson
+  - Cached after first generation
+
+- Pipeline is idempotent:
+  - Safe to retry using `generation_id`
+  - Steps skip already-processed data
+
+- Embeddings are reused later for:
+  - context retrieval during lesson generation (RAG)
+
+- Generation settings (modules, lessons, difficulty, etc.) are snapshotted at generation time
 
 **Security:** RLS enabled on all tables — users only access their own data or explicitly public content. API key server-side only.
-
----
-
-*Full specification: PRD.md v2.0*

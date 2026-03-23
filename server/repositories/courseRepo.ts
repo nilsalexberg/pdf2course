@@ -1,5 +1,5 @@
 import { createError } from 'h3'
-import type { Course, CoursePdf } from '../../types/course'
+import type { Course, CoursePdf, GenerationStatus } from '../../types/course'
 
 export async function listCoursesByProducerId(client: any, producerId: string): Promise<Course[]> {
   const { data: courses, error } = await client
@@ -122,3 +122,22 @@ export async function deleteCoursePdfFromDb(client: any, pdfId: string): Promise
   }
 }
 
+export async function updateCourseGenerationStatus(
+  client: any,
+  courseId: string,
+  generationStatus: GenerationStatus,
+  generationError: string | null = null,
+): Promise<Course> {
+  const { data: course, error } = await client
+    .from('courses')
+    .update({ generation_status: generationStatus, generation_error: generationError })
+    .eq('id', courseId)
+    .select()
+    .single()
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  return course as Course
+}

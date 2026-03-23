@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CourseWithSignedCover } from '@@/types/course'
+import type { CourseWithSignedCover, Course } from '@@/types/course'
 
 definePageMeta({ middleware: ['auth', 'role'] })
 
@@ -17,6 +17,22 @@ const coverFile = ref<File | null>(null)
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
 const stagedPdfs = ref<File[]>([])
+const generating = ref(false)
+
+async function handleGenerate() {
+  errorMessage.value = null
+  generating.value = true
+  try {
+    const updated = await $fetch<Course>(`/api/courses/${id}/generate`, { method: 'POST' })
+    if (course.value) {
+      course.value = { ...course.value, ...updated }
+    }
+  } catch (err: any) {
+    errorMessage.value = err?.data?.message ?? err?.message ?? err?.statusMessage ?? 'Failed to start generation.'
+  } finally {
+    generating.value = false
+  }
+}
 
 // Initialize form with course data
 watch(course as any, (newCourse: CourseWithSignedCover | null) => {
@@ -181,6 +197,25 @@ async function handleSubmit() {
             {{ loading ? 'Saving…' : 'Save changes' }}
           </UiButton>
         </form>
+
+        <div class="mt-6 pt-6 border-t border-slate-800/50 space-y-6">
+          <div>
+            <p class="text-sm font-medium text-slate-300">AI Generation</p>
+            <div class="mt-2">
+              <CoursesGenerationStatus :status="course?.generation_status ?? 'idle'" />
+            </div>
+          </div>
+          <UiButton
+            type="button"
+            :loading="generating"
+            :disabled="course?.generation_status === 'processing' || course?.generation_status === 'generating_structure'"
+            @click="handleGenerate"
+          >
+            {{ generating ? 'Starting…' : 'Generate course' }}
+          </UiButton>
+
+          <p v-if="course?.generation_error" class="text-xs text-red-400">{{ course.generation_error }}</p>
+        </div>
 
         <p v-if="errorMessage" class="mt-4 text-sm text-red-400">
           {{ errorMessage }}

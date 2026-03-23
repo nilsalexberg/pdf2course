@@ -1,5 +1,9 @@
 export type CourseStatus = 'draft' | 'pending_review' | 'approved' | 'rejected'
 
+export type GenerationStatus = 'idle' | 'processing' | 'generating_structure' | 'ready' | 'failed'
+
+export const GENERATION_IN_PROGRESS: GenerationStatus[] = ['processing', 'generating_structure']
+
 export interface CourseConfig {
   num_modules?: number
   lessons_per_module?: number
@@ -12,6 +16,8 @@ export interface Course {
   description: string | null
   cover_url: string | null
   status: CourseStatus
+  generation_status: GenerationStatus
+  generation_error: string | null
   config: CourseConfig
   created_at: string
   updated_at: string
