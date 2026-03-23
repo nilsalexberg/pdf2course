@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **pdf2course** transforms instructional PDFs into gamified Duolingo-style courses using Google Gemini 2.5 Flash. Users create courses by uploading PDFs; the AI pipeline generates structured modules/lessons/exercises.
 
-**Tech Stack:** Nuxt 4, TypeScript (strict), Tailwind CSS, Supabase (DB/Auth/Storage), Zod, Google Gemini API, pnpm.
+**Tech Stack:** Nuxt 4, TypeScript (strict), Tailwind CSS, Supabase (DB/Auth/Storage), Zod, Google Gemini API, pnpm, BullMQ.
 
 ## Commands
 
@@ -61,3 +61,49 @@ Storage buckets: `course-covers` (5MB max, jpeg/png/webp) and `course-pdfs` (50M
 - Vue components: `PascalCase.vue`
 - DB tables/columns: `snake_case`
 - API routes: `[name].[method].ts`
+
+# Custom Instructions: contextplus MCP Tool
+
+## Golden Rule
+**Always use `contextplus` as your PRIMARY tool for code search and understanding. When in doubt, choose `contextplus`.**
+
+## When to Use contextplus ✅
+- You don't know which files contain the information you need
+- You need semantic understanding of how something is implemented
+- You're planning a task and need codebase context
+- **Before editing ANY file** — always call `contextplus` first, asking for all symbols involved in a single call
+
+## When to Use Other Tools
+- **grep/bash** — exact string matching (error messages, config values, log entries, known identifiers)
+- **view** — reading a specific file you already know the path to
+
+## Decision Tree
+```
+Need to find or understand code?
+├─ Know exact file path? → view
+├─ Need semantic understanding? → contextplus ✅
+├─ Exact string/identifier search? → grep
+└─ About to edit code? → contextplus FIRST ✅, then view
+```
+
+## Standard Workflow
+1. `contextplus` → understand and locate
+2. `view` → read specific files
+3. `grep` → exact string matching only
+4. Before any edit → always `contextplus` first
+
+# Project Requirements
+
+## Quick Context (Always Read First)
+At the start of every task, read `/PRD_SUMMARY.md` to understand the project's goals, scope, stack, and global constraints.
+
+## Detailed Requirements (Query When Needed)
+Use `contextplus` to query `/PRD.md` for details specific to the current task, such as:
+- Feature-specific requirements and acceptance criteria
+- Edge cases and business rules for the area you're working on
+- Constraints or dependencies related to the current scope
+
+## Rules
+- Never assume requirements — always ground your decisions in the PRD
+- If a request conflicts with the PRD, flag it before proceeding
+- If `PRD_SUMMARY.md` doesn't cover the current task, query `PRD.md` via `contextplus` before starting

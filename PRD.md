@@ -3,8 +3,10 @@
 
 ---
 
-**Version:** 2.0  
-**Stack:** Nuxt.js · TypeScript · Tailwind CSS · Supabase · Google Gemini 2.5 Flash
+**Version:** 2.1  
+**Date:** 2026-03-23  
+**Status:** Draft  
+**Stack:** Nuxt.js · TypeScript · Tailwind CSS · Supabase · Google Gemini 2.5 Flash · BullMQ · Redis
 
 ---
 
@@ -103,8 +105,11 @@ Every course has a `visibility` field that controls who can access it:
 | Authentication | Supabase Auth (email/password + OAuth) |
 | File Storage | Supabase Storage |
 | AI Content Generation | Google Gemini API — `gemini-2.5-flash` |
-| PDF Extraction | pdf-parse or pdf.js (Node) |
-| Async Jobs / Queues | Custom queue via `jobs` table + Supabase Edge Functions |
+| Embeddings / RAG | `@xenova/transformers` or OpenAI Embeddings API (stored in Supabase with `pgvector`) |
+| Keyphrase Extraction | KeyBERT (Python sidecar) or equivalent Node.js library |
+| PDF Extraction | `pdf-parse` (Node) |
+| Background Job Queue | **BullMQ** (backed by Redis) |
+| Cache / Queue Broker | Redis (Upstash or self-hosted) |
 
 ### 4.2 Core Data Model (Supabase / PostgreSQL)
 
@@ -113,14 +118,23 @@ profiles             → id (= auth.users.id), role (user|admin), name, avatar_u
 
 courses              → id, creator_id, title, description, cover_url,
                        visibility (private|pending_review|public|rejected),
-                       rejection_reason, config (jsonb: num_modules, lessons_per_module),
+                       rejection_reason,
+                       generation_status (idle|processing|generating_structure|ready|failed),
+                       generation_id,
+                       config (jsonb: num_modules, lessons_per_module),
+                       summary (jsonb: key_topics, themes, estimated_difficulty),
                        created_at, updated_at
 
 course_pdfs          → id, course_id, file_url, file_name, processing_status, created_at
 
+document_chunks      → id, course_id, pdf_id, chunk_index, content (text),
+                       token_count, embedding (vector), keyphrases (jsonb), created_at
+
 modules              → id, course_id, order_index, title
 
-lessons              → id, module_id, order_index, title, content_blocks (jsonb)
+lessons              → id, module_id, order_index, title, objective,
+                       generation_status (not_generated|generating|ready|failed),
+                       content_blocks (jsonb)
 
 exercises            → id, lesson_id, order_index, type, question,
                        options (jsonb), correct_answer, explanation
@@ -133,14 +147,19 @@ exercise_attempts    → id, play_id, exercise_id, answer, is_correct, attempted
 
 user_stats           → id (= user_id), xp_total, streak_days, last_activity_at
 
-jobs                 → id, type, payload (jsonb), status (pending|processing|completed|failed),
-                       created_at, updated_at
+jobs                 → id, generation_id, queue_name, type, payload (jsonb),
+                       status (pending|processing|completed|failed),
+                       attempts, last_error, created_at, updated_at
 ```
 
 **Key design decisions:**
 - `plays` replaces `enrollments` — a user simply "starts playing" a course, no prior enrollment needed for public courses.
 - `user_stats` is global per user (not per course), reflecting the unified learner identity.
 - `creator_id` in `courses` links to `profiles`, with no special role required to create a course.
+- `document_chunks` stores the text chunks, their embeddings (for RAG-based lesson generation), and extracted keyphrases used to guide the summarization layer.
+- `courses.generation_status` tracks the multi-step pipeline progress independently from `visibility`.
+- `lessons.generation_status` is `not_generated` after course structure is created — lesson content is generated lazily or in a secondary job phase.
+- `jobs.generation_id` links every BullMQ job back to the originating generation request for traceability.
 
 ### 4.3 Row Level Security (RLS) Rules
 
@@ -148,11 +167,65 @@ jobs                 → id, type, payload (jsonb), status (pending|processing|c
 |---|---|
 | `courses` | Creator can read/write their own. All users can read `public` courses. Admins can read all. |
 | `course_pdfs` | Creator only. |
+| `document_chunks` | Creator only (server-side service role for writes). |
 | `modules / lessons / exercises` | Creator can write. Any user can read if course is `public`. |
 | `plays` | User can read/write their own plays only. |
 | `lesson_progress / exercise_attempts` | User can read/write their own records only. |
 | `user_stats` | User can read/write their own stats only. |
 | `jobs` | Server-side only (service role). |
+
+### 4.4 Nuxt Folder Structure
+
+```
+/
+├── pages/
+│   ├── auth/
+│   ├── dashboard/          ← unified home for all users
+│   ├── courses/
+│   │   ├── new/            ← create course
+│   │   ├── [id]/
+│   │   │   ├── edit/       ← edit course settings
+│   │   │   ├── content/    ← edit generated content
+│   │   │   └── play/       ← lesson engine entry
+│   ├── discover/           ← browse public courses
+│   └── admin/
+│       ├── review/
+│       └── users/
+├── server/
+│   ├── api/
+│   │   ├── courses/
+│   │   ├── modules/
+│   │   ├── lessons/
+│   │   ├── plays/
+│   │   ├── progress/
+│   │   └── admin/
+│   └── services/
+│       ├── pdf-extractor.ts
+│       ├── chunker.ts
+│       ├── embeddings.ts
+│       ├── keyphrase-extractor.ts
+│       ├── summarizer.ts
+│       ├── ai-generator.ts
+│       └── realtime-notifier.ts
+├── workers/                ← BullMQ worker processes (run as separate Node processes)
+│   ├── index.ts            ← worker bootstrap (connects to Redis, registers all queues)
+│   ├── queues.ts           ← BullMQ Queue definitions (shared between API and workers)
+│   ├── pdf-processor.worker.ts
+│   ├── chunker.worker.ts
+│   ├── embeddings.worker.ts
+│   ├── summarizer.worker.ts
+│   └── course-structure.worker.ts
+├── composables/
+├── components/
+│   ├── course/
+│   ├── learn/
+│   └── admin/
+├── middleware/
+│   ├── auth.ts
+│   └── admin.ts
+└── supabase/
+    └── migrations/
+```
 
 ---
 
@@ -204,30 +277,82 @@ This is the home screen for every non-admin user after login. It consolidates th
 - **FR-CRS-01:** Any authenticated user must be able to create a new course by providing: title, description, cover image, and AI generation settings (number of modules, number of lessons per module).
 - **FR-CRS-02:** The user must be able to upload one or more PDFs as source material.
 - **FR-CRS-03:** The system must accept PDFs up to 50 MB per file, with a maximum of 5 files per course.
-- **FR-CRS-04:** The system must display PDF processing status in real time (waiting, processing, completed, error).
-- **FR-CRS-05:** The user must be able to manually trigger AI content generation after uploading PDFs.
-- **FR-CRS-06:** The system must display an estimated time to completion for content generation.
+- **FR-CRS-04:** The system must display generation progress in real time via Supabase Realtime, reflecting the current `generation_status` of the course: `idle → processing → generating_structure → ready` (or `failed`).
+- **FR-CRS-05:** The user must be able to manually trigger AI content generation after uploading PDFs. Triggering enqueues a BullMQ job and immediately sets `generation_status` to `processing`.
+- **FR-CRS-06:** The system must display a descriptive status label for each pipeline stage so the user understands what is happening (e.g., "Extracting text", "Analyzing content", "Building course structure").
 - **FR-CRS-07:** A newly created course must always start with `visibility: private`.
 
 #### 5.3.2 AI Content Generation Pipeline
 
+The generation process runs entirely in the background via **BullMQ** workers connected to Redis. Each step is a separate job in a named queue, chained sequentially. The API layer only enqueues the first job and listens for status updates via Supabase Realtime.
+
+**BullMQ Queues**
+
+| Queue Name | Responsibility |
+|---|---|
+| `pdf-processing` | Text extraction and cleaning |
+| `chunking` | Document splitting and chunk persistence |
+| `embeddings` | Embedding generation and storage (pgvector) |
+| `keyphrase-extraction` | Semantic keyphrase extraction per chunk |
+| `summarization` | Chunk-level, document-level, and course-level summaries |
+| `course-structure` | Gemini call → modules + lesson stubs |
+
+**Pipeline Steps**
+
 ```
-1. PDF upload → Supabase Storage (private bucket)
-2. Job registered in the `jobs` table (status: pending)
-3. Text extracted from PDF (pdf-parse)
-4. Full text sent to Gemini API in a single context window
-   (no chunking needed for up to ~700 pages thanks to 1M token context)
-5. Call to Google Gemini API (gemini-2.5-flash) with structured prompt:
-   - Input: extracted text + config (N modules, M lessons/module)
-   - Output: structured JSON with modules, lessons, content blocks, and exercises
-6. Generated content persisted to database tables
-7. Job status updated (completed | failed)
-8. User notified via Supabase Realtime
+Step 1 — Trigger (API layer)
+  - User clicks "Generate Course"
+  - Backend creates a `generation_id` (UUID)
+  - Course `generation_status` → `processing`
+  - First job enqueued: pdf-processing queue
+
+Step 2 — PDF Processing  [queue: pdf-processing]
+  - Text extracted from each uploaded PDF via pdf-parse
+  - Text cleaned: whitespace normalization, artifact removal
+  - Output passed to next queue
+
+Step 3 — Chunking  [queue: chunking]
+  - Cleaned text split into overlapping chunks (~500–1000 tokens with overlap)
+  - Each chunk saved as a `document_chunks` record (course_id, pdf_id, chunk_index, content)
+
+Step 4 — Embeddings  [queue: embeddings]
+  - Embedding vector generated for each chunk
+  - Stored in `document_chunks.embedding` (pgvector column)
+  - Enables future semantic retrieval during per-lesson content generation
+
+Step 5 — Keyphrase Extraction  [queue: keyphrase-extraction]
+  - Key phrases extracted per chunk (KeyBERT or equivalent)
+  - Stored in `document_chunks.keyphrases`
+  - Used to reduce noise and focus summarization
+
+Step 6 — Summarization  [queue: summarization]
+  - Optional chunk-level summaries (for very long documents)
+  - Document-level summary per PDF
+  - Final course-level summary generated:
+      · key_topics: string[]
+      · themes: string[]
+      · estimated_difficulty: "beginner" | "intermediate" | "advanced"
+  - Stored in `courses.summary`
+
+Step 7 — Course Structure Generation  [queue: course-structure]
+  - Course `generation_status` → `generating_structure`
+  - Course summary + `courses.config` (num_modules, lessons_per_module) sent to gemini-2.5-flash
+  - Gemini returns structured JSON: modules + lesson stubs (title + objective only — no content yet)
+  - Modules saved to `modules` table
+  - Lessons saved to `lessons` table with `generation_status: not_generated`
+
+Step 8 — Completion
+  - Course `generation_status` → `ready`
+  - User notified via Supabase Realtime
 ```
 
-**Generation Prompt (guidelines for the AI agent)**
+**Notes for the AI agent:**
+- Each BullMQ worker must update `jobs` table on start, completion, and failure for audit purposes.
+- If any step fails, the worker must set `courses.generation_status` to `failed`, update the job record, and notify the user via Realtime.
+- BullMQ retry policy per queue: 3 attempts with exponential backoff (1s, 5s, 30s).
+- Workers run as separate long-lived Node.js processes (not as Nuxt server routes). They share access to the Supabase service-role client and Redis.
 
-The prompt sent to the Google Gemini API must use `responseMimeType: "application/json"` with a defined `responseSchema` (Gemini's native Structured Output) to guarantee valid JSON. Expected schema:
+**Gemini call for course structure — expected output schema:**
 
 ```json
 {
@@ -239,26 +364,15 @@ The prompt sent to the Google Gemini API must use `responseMimeType: "applicatio
         {
           "title": "string",
           "order_index": 1,
-          "content_blocks": [
-            { "type": "text", "content": "string" },
-            { "type": "tip", "content": "string" },
-            { "type": "highlight", "content": "string" }
-          ],
-          "exercises": [
-            {
-              "type": "multiple_choice | true_false | fill_blank | ordering",
-              "question": "string",
-              "options": ["string"],
-              "correct_answer": "string | string[]",
-              "explanation": "string"
-            }
-          ]
+          "objective": "string"
         }
       ]
     }
   ]
 }
 ```
+
+> Note: lesson `content_blocks` and `exercises` are **not** generated in this step. They are generated in a separate per-lesson job triggered when the user first opens a lesson (lazy generation) or via a background batch job after structure generation completes.
 
 #### 5.3.3 Content Editing
 
@@ -268,7 +382,8 @@ The prompt sent to the Google Gemini API must use `responseMimeType: "applicatio
 - **FR-CRS-09:** The user must be able to edit the title and text of any content block.
 - **FR-CRS-10:** The user must be able to add, edit, and remove exercises from any lesson.
 - **FR-CRS-11:** The user must be able to reorder modules and lessons via drag-and-drop.
-- **FR-CRS-12:** The user must be able to regenerate content for a specific module without affecting the rest.
+- **FR-CRS-12:** The user must be able to trigger regeneration of content for a specific lesson that is in `not_generated` or `failed` status, without affecting other lessons.
+- **FR-CRS-12b:** Lessons with `generation_status: not_generated` must display a "Generate" button in the content editor and a placeholder state in the lesson engine until content is available.
 - **FR-CRS-13:** All changes must be auto-saved (autosave with 2s debounce).
 
 #### 5.3.4 Visibility and Publication
@@ -585,14 +700,13 @@ GET    /api/admin/metrics                    ← Platform metrics
 ### 11.1 Google Gemini API
 
 - **Primary model:** `gemini-2.5-flash`
-- **Usage:** Generation of course structure (modules, lessons, exercises) from text extracted from PDFs.
-- **Authentication:** API Key via `GEMINI_API_KEY` environment variable (server-side only).
+- **Usage:** Course structure generation (modules + lesson stubs) from the course-level summary. Per-lesson content and exercise generation (triggered lazily or in batch).
+- **Authentication:** API Key via `GEMINI_API_KEY` environment variable (server-side / worker process only).
 - **SDK:** `@google/generative-ai` (official Node.js package).
-- **Structured Output:** Use `responseMimeType: "application/json"` + `responseSchema` to guarantee valid JSON.
-- **Long context:** The 1M token context window allows sending the full PDF text in a single API call, eliminating the need for chunking for most documents.
-- **Estimated cost per generation:** ~$0.01–$0.03 per module generated (20–40k input tokens + 5–10k output tokens).
+- **Structured Output:** Use `responseMimeType: "application/json"` + `responseSchema` for all generation calls to guarantee valid, schema-conformant JSON.
+- **Estimated cost per course generation:** ~$0.01–$0.05 for structure generation (summary → structure call is small); per-lesson generation adds ~$0.01–$0.03 per lesson.
 - **Free tier:** 15 RPM and 1,000 requests/day at no cost during development (Google AI Studio).
-- **Considerations:** Implement retry with exponential backoff; log tokens per job for cost tracking; use `temperature: 0.4` for structural consistency.
+- **Considerations:** All Gemini calls happen inside BullMQ workers, never in API routes. Use `temperature: 0.4` for structure generation; per-lesson calls may use slightly higher temperature for content variety.
 
 **Sample call (reference for the AI agent):**
 
@@ -605,21 +719,41 @@ const model = genAI.getGenerativeModel({
   model: "gemini-2.5-flash",
   generationConfig: {
     responseMimeType: "application/json",
-    responseSchema: courseSchema, // typed JSON schema
+    responseSchema: courseStructureSchema,
     temperature: 0.4,
   },
 });
 
 const result = await model.generateContent(prompt);
-const course = JSON.parse(result.response.text());
+const structure = JSON.parse(result.response.text());
 ```
 
-### 11.2 Supabase
+### 11.2 BullMQ + Redis
+
+- **Library:** `bullmq` (Node.js)
+- **Broker:** Redis — use Upstash Redis (serverless, free tier available) for MVP; self-hosted Redis for production.
+- **Usage:** All background processing for the generation pipeline runs as BullMQ jobs. The API layer only enqueues; workers process asynchronously.
+- **Queue definitions** are in `workers/queues.ts` and imported by both the API (to enqueue) and workers (to consume).
+- **Worker processes** are started separately from the Nuxt dev/build process (e.g., `node workers/index.ts`), managed by a process manager (PM2 or Docker Compose in production).
+- **Job chaining:** each worker enqueues the next queue's job upon successful completion.
+- **Retry policy:** 3 attempts per job with exponential backoff (delays: 1 000ms, 5 000ms, 30 000ms).
+- **Dead-letter handling:** failed jobs after all retries must update `courses.generation_status` to `failed`, persist the error in `jobs.last_error`, and trigger a Realtime notification to the user.
+- **Observability:** BullMQ's built-in events (`completed`, `failed`, `progress`) are used to sync the `jobs` table and push Realtime updates.
+
+**Environment variables required:**
+```
+REDIS_URL=redis://...        # Upstash or self-hosted Redis connection string
+GEMINI_API_KEY=...
+SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=... # Workers use service role to bypass RLS
+```
+
+### 11.3 Supabase
 
 - **Auth:** Session and user management.
-- **Database:** PostgreSQL with RLS enabled on all tables.
+- **Database:** PostgreSQL with RLS enabled on all tables. `pgvector` extension enabled for chunk embeddings.
 - **Storage:** Private buckets for PDFs; public bucket for course cover images.
-- **Realtime:** Job progress notifications during content generation.
+- **Realtime:** Pushes `generation_status` changes from the `courses` table to the frontend so users see live pipeline progress without polling.
 
 ---
 
@@ -627,9 +761,12 @@ const course = JSON.parse(result.response.text());
 
 | Scenario | Behavior |
 |---|---|
-| Corrupted or unreadable PDF | Job marked as `failed`; user notified with guidance to re-upload |
-| Google Gemini API error | Automatic retry 3x with exponential backoff; after total failure, notify user and mark job `failed` |
-| Generation timeout | Job expired after 15 min; user can manually reprocess |
+| Corrupted or unreadable PDF | `pdf-processing` job fails; `generation_status` → `failed`; user notified via Realtime with guidance to re-upload |
+| BullMQ job failure (any step) | Automatic retry up to 3x with exponential backoff; after all retries exhausted, `generation_status` → `failed`, `jobs.last_error` persisted, user notified |
+| Google Gemini API error | Handled inside `course-structure` (and per-lesson) worker; retried per BullMQ policy; on final failure, status set to `failed` |
+| Generation timeout | Job marked as `stalled` by BullMQ after lock expires; treated as failure; user can manually re-trigger |
+| Redis / BullMQ unavailable | API returns 503 with a user-facing message; generation cannot be started until queue is healthy |
+| Embedding service error | `embeddings` job retried; on failure, pipeline continues without embeddings (RAG degraded) — flagged in job metadata |
 | Form validation error | Inline field feedback; never erase already-filled data |
 | Unauthorized access to private course | Return 403; redirect to dashboard |
 | Expired session | Redirect to login with return to original page after authentication |
@@ -679,10 +816,11 @@ const course = JSON.parse(result.response.text());
 
 ### AC-01: Course Creation and Generation
 - [ ] Any authenticated user can create a course from the dashboard.
-- [ ] Given a valid PDF, the system generates content in under 5 minutes per module.
-- [ ] The generated JSON is valid and correctly persisted to the database.
-- [ ] The user is notified via Realtime when generation completes or fails.
-- [ ] A newly created course always starts as `private`.
+- [ ] Clicking "Generate Course" immediately sets `generation_status` to `processing` and enqueues the pipeline in BullMQ.
+- [ ] The frontend reflects each pipeline stage in real time via Supabase Realtime (`processing` → `generating_structure` → `ready`).
+- [ ] On completion, modules and lesson stubs (title + objective) are persisted; lesson `generation_status` is `not_generated`.
+- [ ] On any pipeline failure, `generation_status` is set to `failed` and the user is notified with the failing step.
+- [ ] A newly created course always starts as `visibility: private`.
 
 ### AC-02: Visibility Flow
 - [ ] The user can submit a course for review; it immediately becomes `pending_review` and is locked for editing.
@@ -725,12 +863,17 @@ const course = JSON.parse(result.response.text());
 | **Exercise** | Interactive question to validate the learner's knowledge |
 | **Screen** | Individual screen in the lesson engine (content or exercise) |
 | **Play** | A user's active learning session for a specific course |
-| **Visibility** | A course's access state: private, pending_review, public, or rejected |
+| **Visibility** | A course's publication state: private, pending_review, public, or rejected |
+| **Generation Status** | A course's pipeline progress state: idle, processing, generating_structure, ready, or failed |
+| **Chunk** | A fixed-size overlapping segment of extracted PDF text, stored with its embedding and keyphrases |
+| **Embedding** | A vector representation of a text chunk, stored in pgvector for semantic retrieval |
+| **RAG** | Retrieval-Augmented Generation — technique of retrieving relevant chunks to ground AI generation |
+| **BullMQ** | Node.js job queue library backed by Redis, used for all background processing |
 | **XP** | Global experience points accumulated by a user across all courses |
 | **Streak** | Number of consecutive days with at least one completed lesson |
 | **Badge** | Achievement unlocked upon reaching specific milestones |
 | **Heart (Life)** | Resource lost on incorrect answers; limits attempts without a pause |
-| **Job** | Asynchronous background task (PDF extraction, AI generation) |
+| **Job** | A single BullMQ task in the generation pipeline, tracked in the `jobs` table |
 | **RLS** | Row Level Security — Supabase's row-level data access control mechanism |
 
 ---
