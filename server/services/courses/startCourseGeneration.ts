@@ -2,6 +2,7 @@ import { createError } from 'h3'
 import type { Course } from '../../../types/course'
 import { GENERATION_IN_PROGRESS } from '../../../types/course'
 import { getCourseById, listCoursePdfs, updateCourseGenerationStatus } from '../../repositories/courseRepo'
+import { getCourseGenerationQueue } from '../../queues/courseGenerationQueue'
 
 export async function startCourseGeneration(client: any, userId: string, courseId: string): Promise<Course> {
   const course = await getCourseById(client, courseId)
@@ -19,5 +20,9 @@ export async function startCourseGeneration(client: any, userId: string, courseI
     throw createError({ statusCode: 422, statusMessage: 'Upload at least one PDF before generating the course' })
   }
 
-  return await updateCourseGenerationStatus(client, courseId, 'processing')
+  await getCourseGenerationQueue().add('generate', { courseId })
+
+  const updatedCourse = await updateCourseGenerationStatus(client, courseId, 'processing')
+
+  return updatedCourse
 }
