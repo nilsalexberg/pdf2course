@@ -1,8 +1,8 @@
 export type CourseStatus = 'draft' | 'pending_review' | 'approved' | 'rejected'
 
-export type GenerationStatus = 'idle' | 'processing' | 'embedding' | 'generating_structure' | 'ready' | 'failed'
+export type GenerationStatus = 'idle' | 'processing' | 'embedding' | 'summarizing' | 'generating_structure' | 'ready' | 'failed'
 
-export const GENERATION_IN_PROGRESS: GenerationStatus[] = ['processing', 'generating_structure']
+export const GENERATION_IN_PROGRESS: GenerationStatus[] = ['processing', 'embedding', 'summarizing', 'generating_structure']
 
 export interface CourseConfig {
   num_modules?: number

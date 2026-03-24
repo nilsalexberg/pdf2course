@@ -16,11 +16,31 @@ const statusConfig = computed(() => {
         pulse: false
       }
     case 'processing':
-    case 'generating_structure':
       return {
-        label: props.status === 'processing' ? 'Processing PDF...' : 'Generating Structure...',
+        label: 'Processing PDF...',
         dotClass: 'bg-yellow-400',
         bgClass: 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20',
+        pulse: true
+      }
+    case 'embedding':
+      return {
+        label: 'Embedding Chunks...',
+        dotClass: 'bg-cyan-400',
+        bgClass: 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20',
+        pulse: true
+      }
+    case 'summarizing':
+      return {
+        label: 'Summarizing...',
+        dotClass: 'bg-blue-400',
+        bgClass: 'bg-blue-400/10 text-blue-400 border-blue-400/20',
+        pulse: true
+      }
+    case 'generating_structure':
+      return {
+        label: 'Generating Structure...',
+        dotClass: 'bg-violet-400',
+        bgClass: 'bg-violet-400/10 text-violet-400 border-violet-400/20',
         pulse: true
       }
     case 'ready':
