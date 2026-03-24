@@ -4,9 +4,15 @@ export type GenerationStatus = 'idle' | 'processing' | 'embedding' | 'summarizin
 
 export const GENERATION_IN_PROGRESS: GenerationStatus[] = ['processing', 'embedding', 'summarizing', 'generating_structure']
 
+import type { CourseLanguageLevel, CourseFocus, CourseLanguage, CourseTone } from './courseConfig'
+
 export interface CourseConfig {
   num_modules?: number
   lessons_per_module?: number
+  language_level?: CourseLanguageLevel
+  focus?: CourseFocus
+  language?: CourseLanguage
+  tone?: CourseTone
 }
 
 export interface Course {

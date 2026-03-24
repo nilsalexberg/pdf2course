@@ -21,7 +21,14 @@ export async function updateCourse(
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   }
 
-  const config = { num_modules: input.num_modules, lessons_per_module: input.lessons_per_module }
+  const config = {
+    num_modules: input.num_modules,
+    lessons_per_module: input.lessons_per_module,
+    language_level: input.language_level,
+    focus: input.focus,
+    language: input.language,
+    tone: input.tone,
+  }
 
   const updatedCourse = await updateRepoCourse(client, courseId, {
     title: input.title,

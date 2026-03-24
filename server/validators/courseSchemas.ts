@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { COURSE_LANGUAGE_LEVELS, COURSE_FOCUS_OPTIONS, COURSE_LANGUAGES, COURSE_TONES } from '../../types/courseConfig'
 
 export const CourseCreateLimits = {
   numModules: { min: 1, max: 50 },
@@ -30,6 +31,10 @@ export const courseCreateSchema = z.object({
         v >= CourseCreateLimits.lessonsPerModule.min && v <= CourseCreateLimits.lessonsPerModule.max,
       `lessons_per_module must be between ${CourseCreateLimits.lessonsPerModule.min} and ${CourseCreateLimits.lessonsPerModule.max}`,
     ),
+  language_level: z.enum(COURSE_LANGUAGE_LEVELS as unknown as [string, ...string[]]),
+  focus: z.enum(COURSE_FOCUS_OPTIONS as unknown as [string, ...string[]]),
+  language: z.enum(COURSE_LANGUAGES as unknown as [string, ...string[]]),
+  tone: z.enum(COURSE_TONES as unknown as [string, ...string[]]),
 })
 
 export type CourseCreateInput = z.infer<typeof courseCreateSchema>

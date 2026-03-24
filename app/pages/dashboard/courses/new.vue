@@ -1,5 +1,6 @@
 <script setup lang="ts">
 definePageMeta({ middleware: ['auth', 'role'] })
+import { COURSE_LANGUAGE_LEVELS, COURSE_FOCUS_OPTIONS, COURSE_LANGUAGES, COURSE_TONES } from '@@/types/courseConfig'
 
 const router = useRouter()
 
@@ -7,6 +8,10 @@ const title = ref('')
 const description = ref('')
 const numModules = ref(5)
 const lessonsPerModule = ref(4)
+const languageLevel = ref<string>(COURSE_LANGUAGE_LEVELS[0])
+const focus = ref<string>(COURSE_FOCUS_OPTIONS[0])
+const language = ref<string>(COURSE_LANGUAGES[0])
+const tone = ref<string>(COURSE_TONES[0])
 const coverFile = ref<File | null>(null)
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
@@ -97,6 +102,10 @@ async function handleSubmit() {
     if (coverFile.value) {
       formData.set('cover', coverFile.value)
     }
+    formData.set('language_level', languageLevel.value)
+    formData.set('focus', focus.value)
+    formData.set('language', language.value)
+    formData.set('tone', tone.value)
 
     for (const pdf of pdfFiles.value) {
       formData.append('pdfs', pdf)
@@ -182,6 +191,40 @@ async function handleSubmit() {
               required
               :min="1"
               :max="20"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <UiSelect
+              id="language_level"
+              v-model="languageLevel"
+              label="Language level"
+              :options="COURSE_LANGUAGE_LEVELS"
+              required
+            />
+            <UiSelect
+              id="focus"
+              v-model="focus"
+              label="Educational focus"
+              :options="COURSE_FOCUS_OPTIONS"
+              required
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <UiSelect
+              id="language"
+              v-model="language"
+              label="Target language"
+              :options="COURSE_LANGUAGES"
+              required
+            />
+            <UiSelect
+              id="tone"
+              v-model="tone"
+              label="Course tone"
+              :options="COURSE_TONES"
+              required
             />
           </div>
 

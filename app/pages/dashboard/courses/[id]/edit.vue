@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CourseWithSignedCover, Course } from '@@/types/course'
+import { COURSE_LANGUAGE_LEVELS, COURSE_FOCUS_OPTIONS, COURSE_LANGUAGES, COURSE_TONES } from '@@/types/courseConfig'
 
 definePageMeta({ middleware: ['auth', 'role'] })
 
@@ -7,12 +8,16 @@ const route = useRoute()
 const router = useRouter()
 const id = route.params.id as string
  
-const { data: course, pending, error } = await useFetch<CourseWithSignedCover>(`/api/courses/${id}`)
+const { data: course, pending, error, refresh } = await useFetch<CourseWithSignedCover>(`/api/courses/${id}`)
 
 const title = ref('')
 const description = ref('')
 const numModules = ref(5)
 const lessonsPerModule = ref(4)
+const languageLevel = ref<string>(COURSE_LANGUAGE_LEVELS[0])
+const focus = ref<string>(COURSE_FOCUS_OPTIONS[0])
+const language = ref<string>(COURSE_LANGUAGES[0])
+const tone = ref<string>(COURSE_TONES[0])
 const coverFile = ref<File | null>(null)
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
@@ -41,6 +46,10 @@ watch(course as any, (newCourse: CourseWithSignedCover | null) => {
     description.value = newCourse.description || ''
     numModules.value = newCourse.config?.num_modules ?? 5
     lessonsPerModule.value = newCourse.config?.lessons_per_module ?? 4
+    languageLevel.value = newCourse.config?.language_level ?? COURSE_LANGUAGE_LEVELS[0]
+    focus.value = newCourse.config?.focus ?? COURSE_FOCUS_OPTIONS[0]
+    language.value = newCourse.config?.language ?? COURSE_LANGUAGES[0]
+    tone.value = newCourse.config?.tone ?? COURSE_TONES[0]
   }
 }, { immediate: true })
 
@@ -84,6 +93,10 @@ async function handleSubmit() {
     formData.set('description', description.value.trim())
     formData.set('num_modules', String(numModules.value))
     formData.set('lessons_per_module', String(lessonsPerModule.value))
+    formData.set('language_level', languageLevel.value)
+    formData.set('focus', focus.value)
+    formData.set('language', language.value)
+    formData.set('tone', tone.value)
     if (coverFile.value) {
       formData.set('cover', coverFile.value)
     }
@@ -97,7 +110,8 @@ async function handleSubmit() {
       body: formData,
     } as any)
 
-    await router.replace('/dashboard')
+    // await router.replace('/dashboard')
+    await refresh()
   } catch (err: any) {
     const msg = err?.data?.message ?? err?.message ?? err?.statusMessage ?? 'Failed to update course.'
     errorMessage.value = msg
@@ -180,6 +194,40 @@ async function handleSubmit() {
               required
               :min="1"
               :max="20"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <UiSelect
+              id="language_level"
+              v-model="languageLevel"
+              label="Language level"
+              :options="COURSE_LANGUAGE_LEVELS"
+              required
+            />
+            <UiSelect
+              id="focus"
+              v-model="focus"
+              label="Educational focus"
+              :options="COURSE_FOCUS_OPTIONS"
+              required
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <UiSelect
+              id="language"
+              v-model="language"
+              label="Target language"
+              :options="COURSE_LANGUAGES"
+              required
+            />
+            <UiSelect
+              id="tone"
+              v-model="tone"
+              label="Course tone"
+              :options="COURSE_TONES"
+              required
             />
           </div>
 

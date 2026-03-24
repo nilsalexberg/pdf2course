@@ -24,6 +24,10 @@ export default defineEventHandler(async (event): Promise<Course> => {
     description: fields.description ?? '',
     num_modules: fields.num_modules ?? '',
     lessons_per_module: fields.lessons_per_module ?? '',
+    language_level: fields.language_level ?? '',
+    focus: fields.focus ?? '',
+    language: fields.language ?? '',
+    tone: fields.tone ?? '',
   })
   if (!parsed.success) {
     throw createError({
