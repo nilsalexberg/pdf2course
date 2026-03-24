@@ -1,6 +1,6 @@
 export type CourseStatus = 'draft' | 'pending_review' | 'approved' | 'rejected'
 
-export type GenerationStatus = 'idle' | 'processing' | 'generating_structure' | 'ready' | 'failed'
+export type GenerationStatus = 'idle' | 'processing' | 'embedding' | 'generating_structure' | 'ready' | 'failed'
 
 export const GENERATION_IN_PROGRESS: GenerationStatus[] = ['processing', 'generating_structure']
 

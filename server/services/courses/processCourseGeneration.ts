@@ -7,7 +7,10 @@ import {
   updateCourseGenerationStatus,
   deleteDocumentChunksByPdfId,
   insertDocumentChunks,
+  listDocumentChunksByCourseId,
+  batchUpdateDocumentChunkEmbeddings,
 } from '../../repositories/courseRepo'
+import { embedBatch, EMBED_BATCH_SIZE } from '../gemini/embedChunks'
 
 /**
  * Main function to orchestrate the course generation process.
@@ -35,10 +38,8 @@ export async function processCourseGeneration(courseId: string, adminClient: Sup
     await chunkDocuments(adminClient, courseId, freshPdfs)
 
     // ─── STEP 4 — Generate embeddings ─────────────────────────────────────
-    // - Update course status → 'embedding'
-    // - For each chunk, generate embedding vector using Gemini text-embedding-004
-    // - Batch requests (max 100 chunks per API call) to avoid rate limits
-    // - Store embedding in `document_chunks.embedding` (pgvector column)
+    const chunks = await listDocumentChunksByCourseId(adminClient, courseId)
+    await embedDocumentChunks(adminClient, courseId, chunks)
 
     // ─── STEP 5 — Summarize documents ─────────────────────────────────────
     // - Update course status → 'summarizing'
@@ -149,6 +150,38 @@ async function chunkDocuments(adminClient: SupabaseClient, courseId: string, pdf
       )
       throw err
     }
+  }
+}
+
+/**
+ * Generates and stores embeddings for all document chunks of a course.
+ * Processes chunks in batches of EMBED_BATCH_SIZE to stay within API rate limits.
+ * Idempotent: chunks that already have an embedding are skipped.
+ */
+async function embedDocumentChunks(
+  adminClient: SupabaseClient,
+  courseId: string,
+  chunks: Array<{ id: string; content: string; embedding: number[] | null }>,
+) {
+  await updateCourseGenerationStatus(adminClient, courseId, 'embedding')
+  console.log(`[course-generation] Course ${courseId} status → embedding`)
+
+  const pending = chunks.filter((c) => !c.embedding)
+
+  if (pending.length === 0) {
+    console.log(`[course-generation] All chunks already embedded for course ${courseId}`)
+    return
+  }
+
+  let embeddedCount = 0
+
+  for (let i = 0; i < pending.length; i += EMBED_BATCH_SIZE) {
+    const batch = pending.slice(i, i + EMBED_BATCH_SIZE)
+    const vectors = await embedBatch(batch.map((c) => c.content))
+    const updates = batch.map((chunk, j) => ({ id: chunk.id, embedding: vectors[j] as number[] }))
+    await batchUpdateDocumentChunkEmbeddings(adminClient, updates)
+    embeddedCount += batch.length
+    console.log(`[course-generation] Embedded ${embeddedCount}/${pending.length} chunks for course ${courseId}`)
   }
 }
 

@@ -160,6 +160,44 @@ export async function insertDocumentChunks(
   }
 }
 
+export async function listDocumentChunksByCourseId(
+  client: SupabaseClient,
+  courseId: string,
+): Promise<DocumentChunk[]> {
+  const { data, error } = await client
+    .from('document_chunks')
+    .select('*')
+    .eq('course_id', courseId)
+    .order('chunk_index', { ascending: true })
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  return (data ?? []) as DocumentChunk[]
+}
+
+/**
+ * Persists embedding vectors for the given chunks, one row at a time.
+ * Sequential execution avoids saturating the Supabase connection pool when
+ * callers pass a large batch. Throws immediately on the first DB error so the
+ * caller always knows which chunk caused the failure.
+ */
+export async function batchUpdateDocumentChunkEmbeddings(
+  client: SupabaseClient,
+  updates: Array<{ id: string; embedding: number[] }>,
+): Promise<void> {
+  for (const { id, embedding } of updates) {
+    const { error } = await client.from('document_chunks').update({ embedding }).eq('id', id)
+    if (error) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: `Embedding update failed for chunk ${id}: ${error.message}`,
+      })
+    }
+  }
+}
+
 export async function updateCourseGenerationStatus(
   client: SupabaseClient,
   courseId: string,
