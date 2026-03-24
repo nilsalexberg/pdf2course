@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { splitIntoChunks } from './processCourseGeneration'
+import { splitIntoChunks } from './textProcessing'
 
 describe('splitIntoChunks', () => {
   // We know the constants from the implementation:
