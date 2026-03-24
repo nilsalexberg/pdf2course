@@ -21,6 +21,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/pdf-parse": "^1.1.5"
+    "@types/pdf-parse": "^1.1.5",
+    "h3": "2.0.1-rc.19",
+    "vitest": "^4.1.1"
   }
 }
