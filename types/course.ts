@@ -41,3 +41,13 @@ export interface CoursePdf {
 export interface CoursePdfWithSignedUrl extends CoursePdf {
   url_signed: string
 }
+
+export interface DocumentChunk {
+  id: string
+  course_id: string
+  course_pdf_id: string
+  chunk_index: number
+  content: string
+  embedding: number[] | null
+  created_at: string
+}

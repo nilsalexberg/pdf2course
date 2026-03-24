@@ -1,7 +1,8 @@
 import { createError } from 'h3'
-import type { Course, CoursePdf, GenerationStatus } from '../../types/course'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Course, CoursePdf, DocumentChunk, GenerationStatus } from '../../types/course'
 
-export async function listCoursesByProducerId(client: any, producerId: string): Promise<Course[]> {
+export async function listCoursesByProducerId(client: SupabaseClient, producerId: string): Promise<Course[]> {
   const { data: courses, error } = await client
     .from('courses')
     .select('*')
@@ -16,7 +17,7 @@ export async function listCoursesByProducerId(client: any, producerId: string): 
 }
 
 export async function insertCourse(
-  client: any,
+  client: SupabaseClient,
   input: { producer_id: string; title: string; description: string | null; cover_url: string | null; config: any },
 ): Promise<Course> {
   const { data: course, error } = await client
@@ -32,14 +33,14 @@ export async function insertCourse(
   return course as Course
 }
 
-export async function updateCourseCoverUrl(client: any, courseId: string, coverUrl: string | null): Promise<void> {
+export async function updateCourseCoverUrl(client: SupabaseClient, courseId: string, coverUrl: string | null): Promise<void> {
   const { error } = await client.from('courses').update({ cover_url: coverUrl }).eq('id', courseId)
   if (error) {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
 }
 
-export async function getCourseById(client: any, id: string): Promise<Course> {
+export async function getCourseById(client: SupabaseClient, id: string): Promise<Course> {
   const { data: course, error } = await client
     .from('courses')
     .select('*')
@@ -54,7 +55,7 @@ export async function getCourseById(client: any, id: string): Promise<Course> {
 }
 
 export async function updateCourse(
-  client: any,
+  client: SupabaseClient,
   id: string,
   input: { title: string; description: string | null; config: any },
 ): Promise<Course> {
@@ -72,7 +73,7 @@ export async function updateCourse(
   return course as Course
 }
 
-export async function deleteCourse(client: any, id: string): Promise<void> {
+export async function deleteCourse(client: SupabaseClient, id: string): Promise<void> {
   const { error } = await client.from('courses').delete().eq('id', id)
   if (error) {
     throw createError({ statusCode: 500, statusMessage: error.message })
@@ -80,7 +81,7 @@ export async function deleteCourse(client: any, id: string): Promise<void> {
 }
 
 export async function insertCoursePdf(
-  client: any,
+  client: SupabaseClient,
   input: { course_id: string; file_path: string; filename: string; size_bytes: number },
 ): Promise<void> {
   const { error } = await client.from('course_pdfs').insert(input)
@@ -90,7 +91,7 @@ export async function insertCoursePdf(
   }
 }
 
-export async function listCoursePdfs(client: any, courseId: string): Promise<CoursePdf[]> {
+export async function listCoursePdfs(client: SupabaseClient, courseId: string): Promise<CoursePdf[]> {
   const { data, error } = await client
     .from('course_pdfs')
     .select('*')
@@ -104,7 +105,7 @@ export async function listCoursePdfs(client: any, courseId: string): Promise<Cou
   return (data ?? []) as CoursePdf[]
 }
 
-export async function getCoursePdfById(client: any, pdfId: string): Promise<CoursePdf> {
+export async function getCoursePdfById(client: SupabaseClient, pdfId: string): Promise<CoursePdf> {
   const { data, error } = await client.from('course_pdfs').select('*').eq('id', pdfId).single()
 
   if (error) {
@@ -114,7 +115,7 @@ export async function getCoursePdfById(client: any, pdfId: string): Promise<Cour
   return data as CoursePdf
 }
 
-export async function deleteCoursePdfFromDb(client: any, pdfId: string): Promise<void> {
+export async function deleteCoursePdfFromDb(client: SupabaseClient, pdfId: string): Promise<void> {
   const { error } = await client.from('course_pdfs').delete().eq('id', pdfId)
 
   if (error) {
@@ -122,7 +123,7 @@ export async function deleteCoursePdfFromDb(client: any, pdfId: string): Promise
   }
 }
 
-export async function updateCoursePdfText(client: any, pdfId: string, extractedText: string): Promise<void> {
+export async function updateCoursePdfText(client: SupabaseClient, pdfId: string, extractedText: string): Promise<void> {
   const { error } = await client
     .from('course_pdfs')
     .update({ extracted_text: extractedText })
@@ -133,8 +134,34 @@ export async function updateCoursePdfText(client: any, pdfId: string, extractedT
   }
 }
 
+export async function deleteDocumentChunksByPdfId(client: SupabaseClient, coursePdfId: string): Promise<void> {
+  const { error } = await client.from('document_chunks').delete().eq('course_pdf_id', coursePdfId)
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+}
+
+const CHUNK_INSERT_BATCH_SIZE = 100
+
+export async function insertDocumentChunks(
+  client: SupabaseClient,
+  chunks: Array<{ course_id: string; course_pdf_id: string; chunk_index: number; content: string }>,
+): Promise<void> {
+  if (chunks.length === 0) return
+  for (let i = 0; i < chunks.length; i += CHUNK_INSERT_BATCH_SIZE) {
+    const batch = chunks.slice(i, i + CHUNK_INSERT_BATCH_SIZE)
+    const { error } = await client.from('document_chunks').insert(batch)
+    if (error) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: `Batch insert failed at chunk offset ${i}: ${error.message}`,
+      })
+    }
+  }
+}
+
 export async function updateCourseGenerationStatus(
-  client: any,
+  client: SupabaseClient,
   courseId: string,
   generationStatus: GenerationStatus,
   generationError: string | null = null,

@@ -1,10 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
 import { PDFParse } from 'pdf-parse'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   getCourseById,
   listCoursePdfs,
   updateCoursePdfText,
   updateCourseGenerationStatus,
+  deleteDocumentChunksByPdfId,
+  insertDocumentChunks,
 } from '../../repositories/courseRepo'
 
 /**
@@ -12,7 +14,7 @@ import {
  * This function handles fetching PDFs, extracting text, and will eventually
  * handle chunking, embedding, and AI generation of the course structure.
  */
-export async function processCourseGeneration(courseId: string, adminClient: any) {
+export async function processCourseGeneration(courseId: string, adminClient: SupabaseClient) {
   try {
     // ─── STEP 1 — Fetch course + PDFs from DB ─────────────────────────────
     const course = await getCourseById(adminClient, courseId)
@@ -29,9 +31,8 @@ export async function processCourseGeneration(courseId: string, adminClient: any
     await extractTextFromPdfs(adminClient, courseId, pdfs)
 
     // ─── STEP 3 — Chunk documents ──────────────────────────────────────────
-    // - For each document, split extracted_text into chunks
-    //     · prefer splitting on paragraph breaks over mid-sentence
-    // - Insert all chunks into `document_chunks` table
+    const freshPdfs = await listCoursePdfs(adminClient, courseId)
+    await chunkDocuments(adminClient, courseId, freshPdfs)
 
     // ─── STEP 4 — Generate embeddings ─────────────────────────────────────
     // - Update course status → 'embedding'
@@ -79,7 +80,7 @@ export async function processCourseGeneration(courseId: string, adminClient: any
 /**
  * Downloads course PDFs, extracts text using PDFParse, and cleans it.
  */
-async function extractTextFromPdfs(adminClient: any, courseId: string, pdfs: any[]) {
+async function extractTextFromPdfs(adminClient: SupabaseClient, courseId: string, pdfs: any[]) {
   for (const pdf of pdfs) {
     // Idempotency: skip PDFs already processed in a previous run
     if (pdf.extracted_text) {
@@ -105,6 +106,132 @@ async function extractTextFromPdfs(adminClient: any, courseId: string, pdfs: any
 
     console.log(`[course-generation] Extracted ${cleaned.length} chars from ${pdf.filename}`)
   }
+}
+
+// Target character count per chunk (~300 tokens at ~4 chars/token)
+const TARGET_CHUNK_SIZE = 1200
+// Characters from the end of each chunk carried into the start of the next
+const CHUNK_OVERLAP = 200
+// Hard cap per sentence to guard against malformed PDFs with no punctuation
+const MAX_SENTENCE_SIZE = TARGET_CHUNK_SIZE
+
+/**
+ * Splits extracted_text from each PDF into overlapping chunks and persists them.
+ * Idempotent: deletes existing chunks for each PDF before re-inserting.
+ * Wrapped in a try/catch per PDF so failures are clearly attributed for worker retries.
+ */
+async function chunkDocuments(adminClient: SupabaseClient, courseId: string, pdfs: any[]) {
+  for (const pdf of pdfs) {
+    if (!pdf.extracted_text) {
+      console.log(`[course-generation] Skipping chunking for ${pdf.filename} — no extracted text`)
+      continue
+    }
+
+    try {
+      // Idempotency: replace any chunks from a previous run
+      await deleteDocumentChunksByPdfId(adminClient, pdf.id)
+
+      const chunks = splitIntoChunks(pdf.extracted_text)
+      const rows = chunks.map((content, chunk_index) => ({
+        course_id: courseId,
+        course_pdf_id: pdf.id,
+        chunk_index,
+        content,
+      }))
+
+      await insertDocumentChunks(adminClient, rows)
+      console.log(`[course-generation] Chunked ${pdf.filename} into ${chunks.length} chunks`)
+    }
+    catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error(
+        `[course-generation] Failed to chunk PDF "${pdf.filename}" (id=${pdf.id}) for course ${courseId}: ${message}`,
+      )
+      throw err
+    }
+  }
+}
+
+/**
+ * Returns the trailing ~CHUNK_OVERLAP characters of a chunk, starting at a word
+ * boundary so the overlap never begins mid-word.
+ */
+function getOverlapSuffix(text: string): string {
+  if (text.length <= CHUNK_OVERLAP) return text
+  const tail = text.slice(-CHUNK_OVERLAP)
+  const firstSpace = tail.indexOf(' ')
+  return firstSpace === -1 ? tail : tail.slice(firstSpace + 1)
+}
+
+/**
+ * Splits text into chunks with overlap, preferring paragraph breaks over sentence
+ * breaks. Giant sentences from malformed PDFs are hard-capped at MAX_SENTENCE_SIZE
+ * to prevent oversized payloads reaching the vector DB.
+ */
+export function splitIntoChunks(text: string): string[] {
+  const paragraphs = text.split(/\n\n+/)
+  const chunks: string[] = []
+  let current = ''
+
+  // Finalise the current accumulator: push it, then seed the next with an overlap suffix
+  const pushChunk = (): void => {
+    const trimmed = current.trim()
+    if (!trimmed) return
+    chunks.push(trimmed)
+    current = getOverlapSuffix(trimmed)
+  }
+
+  for (const para of paragraphs) {
+    const trimmed = para.trim()
+    if (!trimmed) continue
+
+    // Paragraph too large on its own — split by sentence
+    if (trimmed.length > TARGET_CHUNK_SIZE) {
+      if (current) pushChunk()
+
+      const sentences = trimmed
+        .split(/(?<=[.!?])\s+/)
+        // Hard-cap sentences that lack punctuation (e.g. tables/headers run together)
+        .flatMap((s) => {
+          if (s.length <= MAX_SENTENCE_SIZE) return [s]
+          // Slice at word boundary every MAX_SENTENCE_SIZE chars
+          const parts: string[] = []
+          let remaining = s
+          while (remaining.length > MAX_SENTENCE_SIZE) {
+            const slice = remaining.slice(0, MAX_SENTENCE_SIZE)
+            const lastSpace = slice.lastIndexOf(' ')
+            const cutAt = lastSpace > 0 ? lastSpace : MAX_SENTENCE_SIZE
+            parts.push(remaining.slice(0, cutAt).trim())
+            remaining = remaining.slice(cutAt).trim()
+          }
+          if (remaining) parts.push(remaining)
+          return parts
+        })
+
+      for (const sentence of sentences) {
+        if (!sentence) continue
+        if (current && current.length + 1 + sentence.length > TARGET_CHUNK_SIZE) {
+          pushChunk()
+        }
+        current = current ? `${current} ${sentence}` : sentence
+      }
+      continue
+    }
+
+    // Would appending this paragraph exceed the target?
+    if (current && current.length + 2 + trimmed.length > TARGET_CHUNK_SIZE) {
+      pushChunk()
+      current = current ? `${current}\n\n${trimmed}` : trimmed
+    } else {
+      current = current ? `${current}\n\n${trimmed}` : trimmed
+    }
+  }
+
+  if (current.trim()) {
+    chunks.push(current.trim())
+  }
+
+  return chunks
 }
 
 /**
