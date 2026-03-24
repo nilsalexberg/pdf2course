@@ -106,7 +106,6 @@ Every course has a `visibility` field that controls who can access it:
 | File Storage | Supabase Storage |
 | AI Content Generation | Google Gemini API — `gemini-2.5-flash` |
 | Embeddings / RAG | `@xenova/transformers` or OpenAI Embeddings API (stored in Supabase with `pgvector`) |
-| Keyphrase Extraction | KeyBERT (Python sidecar) or equivalent Node.js library |
 | PDF Extraction | `pdf-parse` (Node) |
 | Background Job Queue | **BullMQ** (backed by Redis) |
 | Cache / Queue Broker | Redis (Upstash or self-hosted) |
@@ -320,28 +319,23 @@ Step 4 — Embeddings  [queue: embeddings]
   - Stored in `document_chunks.embedding` (pgvector column)
   - Enables future semantic retrieval during per-lesson content generation
 
-Step 5 — Keyphrase Extraction  [queue: keyphrase-extraction]
-  - Key phrases extracted per chunk (KeyBERT or equivalent)
-  - Stored in `document_chunks.keyphrases`
-  - Used to reduce noise and focus summarization
-
-Step 6 — Summarization  [queue: summarization]
-  - Optional chunk-level summaries (for very long documents)
-  - Document-level summary per PDF
-  - Final course-level summary generated:
+Step 5 — Summarization  [queue: summarization]
+  - Full extracted text sent to Gemini Flash 2.5 (one call per document)
+  - Document-level summary generated per PDF
+  - All document summaries combined → one final course-level summary:
       · key_topics: string[]
       · themes: string[]
       · estimated_difficulty: "beginner" | "intermediate" | "advanced"
-  - Stored in `courses.summary`
+  - Stored in `courses.ai_summary`
 
-Step 7 — Course Structure Generation  [queue: course-structure]
+Step 6 — Course Structure Generation  [queue: course-structure]
   - Course `generation_status` → `generating_structure`
   - Course summary + `courses.config` (num_modules, lessons_per_module) sent to gemini-2.5-flash
   - Gemini returns structured JSON: modules + lesson stubs (title + objective only — no content yet)
   - Modules saved to `modules` table
   - Lessons saved to `lessons` table with `generation_status: not_generated`
 
-Step 8 — Completion
+Step 7 — Completion
   - Course `generation_status` → `ready`
   - User notified via Supabase Realtime
 ```

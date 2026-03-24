@@ -101,9 +101,13 @@ A platform where any user can upload PDFs and automatically generate a Duolingo-
 5. Embeddings (RAG):
    - Embeddings generated for each chunk
    - Stored for future semantic retrieval (lesson generation phase)
-6. Lightweight Semantic Extraction:
-   - Keyphrases extracted per chunk (e.g. via KeyBERT or similar)
-   - Used to reduce noise and guide summarization
+6. Summarization Layer:
+   - Full document text sent directly to Gemini Flash 2.5 (one call per PDF)
+   - Document-level summary generated per PDF
+   - Final course-level summary created from all document summaries:
+     - key topics
+     - themes
+     - estimated difficulty
 7. Summarization Layer:
    - Chunk-level summaries (optional / optimized)
    - Document-level summaries generated

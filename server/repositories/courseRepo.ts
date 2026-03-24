@@ -122,6 +122,17 @@ export async function deleteCoursePdfFromDb(client: any, pdfId: string): Promise
   }
 }
 
+export async function updateCoursePdfText(client: any, pdfId: string, extractedText: string): Promise<void> {
+  const { error } = await client
+    .from('course_pdfs')
+    .update({ extracted_text: extractedText })
+    .eq('id', pdfId)
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+}
+
 export async function updateCourseGenerationStatus(
   client: any,
   courseId: string,

@@ -33,6 +33,7 @@ export interface CoursePdf {
   file_path: string
   filename: string
   size_bytes: number
+  extracted_text: string | null
   created_at: string
   updated_at: string
 }

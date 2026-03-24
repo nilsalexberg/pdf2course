@@ -7,6 +7,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
       supabasePublishableKey: process.env.SUPABASE_PUBLISHABLE_KEY,
