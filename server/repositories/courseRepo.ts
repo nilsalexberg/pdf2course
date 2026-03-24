@@ -1,6 +1,6 @@
 import { createError } from 'h3'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Course, CoursePdf, DocumentChunk, GenerationStatus } from '../../types/course'
+import type { Course, CoursePdf, DocumentChunk, DocumentSummary, GenerationStatus } from '../../types/course'
 
 export async function listCoursesByProducerId(client: SupabaseClient, producerId: string): Promise<Course[]> {
   const { data: courses, error } = await client
@@ -195,6 +195,21 @@ export async function batchUpdateDocumentChunkEmbeddings(
         statusMessage: `Embedding update failed for chunk ${id}: ${error.message}`,
       })
     }
+  }
+}
+
+export async function updateCoursePdfAiSummary(
+  client: SupabaseClient,
+  pdfId: string,
+  aiSummary: DocumentSummary,
+): Promise<void> {
+  const { error } = await client
+    .from('course_pdfs')
+    .update({ ai_summary: aiSummary })
+    .eq('id', pdfId)
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
   }
 }
 

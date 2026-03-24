@@ -9,8 +9,10 @@ import {
   insertDocumentChunks,
   listDocumentChunksByCourseId,
   batchUpdateDocumentChunkEmbeddings,
+  updateCoursePdfAiSummary,
 } from '../../repositories/courseRepo'
 import { embedBatch, EMBED_BATCH_SIZE } from '../gemini/embedChunks'
+import { summarizeDocument } from '../gemini/summarizeDocument'
 import { cleanExtractedText, splitIntoChunks } from '../../utils/textProcessing'
 
 /**
@@ -43,13 +45,8 @@ export async function processCourseGeneration(courseId: string, adminClient: Sup
     await embedDocumentChunks(adminClient, courseId, chunks)
 
     // ─── STEP 5 — Summarize documents ─────────────────────────────────────
-    // - Update course status → 'summarizing'
-    // - For each document:
-    //     · send full extracted_text to Gemini 2.5 Flash
-    //     · prompt: given the text, return a structured summary
-    //     · store result in `documents.ai_summary`
-    // - Combine all document summaries into a single string
-    // - Send combined summaries to Gemini 2.5 Flash for course-level synthesis
+    const summarizablePdfs = await listCoursePdfs(adminClient, courseId)
+    await summarizeDocuments(adminClient, courseId, summarizablePdfs)
 
     // ─── STEP 6 — Generate course structure ───────────────────────────────
     // - Update course status → 'generating_structure'
@@ -116,14 +113,27 @@ async function extractTextFromPdfs(adminClient: SupabaseClient, courseId: string
  * Wrapped in a try/catch per PDF so failures are clearly attributed for worker retries.
  */
 async function chunkDocuments(adminClient: SupabaseClient, courseId: string, pdfs: any[]) {
+  // Fetch all existing chunks for the course to check which PDFs are already fully processed
+  const existingChunks = await listDocumentChunksByCourseId(adminClient, courseId)
+
   for (const pdf of pdfs) {
     if (!pdf.extracted_text) {
       console.log(`[course-generation] Skipping chunking for ${pdf.filename} — no extracted text`)
       continue
     }
 
+    // Idempotency: Skip if chunks exist AND all have embeddings (indicating a successful previous run)
+    const pdfChunks = existingChunks.filter((c) => c.course_pdf_id === pdf.id)
+    const isFullyProcessed = pdfChunks.length > 0 && pdfChunks.every((c) => c.embedding)
+
+    if (isFullyProcessed) {
+      console.log(`[course-generation] Skipping chunking for ${pdf.filename} — already chunked and embedded`)
+      continue
+    }
+
     try {
-      // Idempotency: replace any chunks from a previous run
+      // If we reach here, it's either a new PDF or a previous run failed during chunking/embedding.
+      // We delete existing chunks (if any) to ensure a clean state before re-inserting.
       await deleteDocumentChunksByPdfId(adminClient, pdf.id)
 
       const chunks = splitIntoChunks(pdf.extracted_text)
@@ -176,5 +186,30 @@ async function embedDocumentChunks(
     await batchUpdateDocumentChunkEmbeddings(adminClient, updates)
     embeddedCount += batch.length
     console.log(`[course-generation] Embedded ${embeddedCount}/${pending.length} chunks for course ${courseId}`)
+  }
+}
+
+/**
+ * Generates a structured knowledge taxonomy (ai_summary) for each PDF using Gemini.
+ * Idempotent: skips PDFs that already have an ai_summary from a previous run.
+ */
+async function summarizeDocuments(adminClient: SupabaseClient, courseId: string, pdfs: any[]) {
+  await updateCourseGenerationStatus(adminClient, courseId, 'summarizing')
+  console.log(`[course-generation] Course ${courseId} status → summarizing`)
+
+  for (const pdf of pdfs) {
+    if (pdf.ai_summary) {
+      console.log(`[course-generation] Skipping ${pdf.filename} — already summarized`)
+      continue
+    }
+
+    if (!pdf.extracted_text) {
+      console.log(`[course-generation] Skipping ${pdf.filename} — no extracted text`)
+      continue
+    }
+
+    const summary = await summarizeDocument(pdf.extracted_text)
+    await updateCoursePdfAiSummary(adminClient, pdf.id, summary)
+    console.log(`[course-generation] Summarized ${pdf.filename} → ${summary.structural_outline.length} topics`)
   }
 }

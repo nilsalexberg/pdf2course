@@ -27,6 +27,20 @@ export interface CourseWithSignedCover extends Course {
   cover_url_signed: string | null
 }
 
+export interface DocumentSummaryTopic {
+  topic_title: string
+  key_concepts: string[]
+  learning_objectives: string[]
+}
+
+export interface DocumentSummary {
+  document_title: string
+  core_themes: string[]
+  estimated_target_difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
+  target_audience: string
+  structural_outline: DocumentSummaryTopic[]
+}
+
 export interface CoursePdf {
   id: string
   course_id: string
@@ -34,6 +48,7 @@ export interface CoursePdf {
   filename: string
   size_bytes: number
   extracted_text: string | null
+  ai_summary: DocumentSummary | null
   created_at: string
   updated_at: string
 }
