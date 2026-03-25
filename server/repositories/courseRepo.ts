@@ -1,6 +1,6 @@
 import { createError } from 'h3'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Course, CoursePdf, DocumentChunk, DocumentSummary, GenerationStatus, LessonContent, LessonStatus, Module, Lesson, ModuleWithLessons } from '../../types/course'
+import type { Course, CoursePdf, DocumentChunk, DocumentSummary, GenerationStatus, LessonCompletion, LessonContent, LessonStatus, Module, Lesson, ModuleWithLessons } from '../../types/course'
 
 export async function listCoursesByProducerId(client: SupabaseClient, producerId: string): Promise<Course[]> {
   const { data: courses, error } = await client
@@ -352,6 +352,44 @@ export async function semanticSearchChunks(
   }
 
   return (data ?? []) as Array<{ id: string; content: string; similarity: number }>
+}
+
+export async function listLessonCompletionsByCourse(
+  client: SupabaseClient,
+  userId: string,
+  courseId: string,
+): Promise<LessonCompletion[]> {
+  const { data, error } = await client
+    .from('lesson_completions')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('course_id', courseId)
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  return (data ?? []) as LessonCompletion[]
+}
+
+export async function upsertLessonCompletion(
+  client: SupabaseClient,
+  input: { user_id: string; lesson_id: string; course_id: string; score_percent: number },
+): Promise<LessonCompletion> {
+  const { data, error } = await client
+    .from('lesson_completions')
+    .upsert(
+      { ...input, completed_at: new Date().toISOString() },
+      { onConflict: 'user_id,lesson_id' },
+    )
+    .select()
+    .single()
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  return data as LessonCompletion
 }
 
 export async function updateCourseGenerationStatus(

@@ -6,6 +6,8 @@ const props = defineProps<{
   lessonIndex: number
   isExpanded: boolean
   isLast: boolean
+  isCompleted: boolean
+  isLocked: boolean
 }>()
 
 const emit = defineEmits<{
@@ -57,17 +59,20 @@ function studyLesson() {
         <span
           class="shrink-0 w-6 h-6 rounded-full border flex items-center justify-center text-xs font-medium transition-colors"
           :class="{
-            'bg-slate-800 border-slate-700 text-slate-400 group-hover:border-slate-600': lesson.status === 'not_generated' || lesson.status === 'failed',
-            'bg-amber-900/40 border-amber-700/60 text-amber-400': isInProgress,
-            'bg-emerald-900/40 border-emerald-700/60 text-emerald-400': lesson.status === 'ready',
+            'bg-emerald-900/40 border-emerald-700/60 text-emerald-400': props.isCompleted,
+            'bg-amber-900/40 border-amber-700/60 text-amber-400': !props.isCompleted && isInProgress,
+            'bg-slate-800 border-slate-700 text-slate-400 group-hover:border-slate-600': !props.isCompleted && !isInProgress,
           }"
         >
-          <svg v-if="lesson.status === 'ready'" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <svg v-if="props.isCompleted" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4" />
           </svg>
           <svg v-else-if="isInProgress" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <svg v-else-if="props.isLocked" class="w-3 h-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
           <span v-else>{{ lesson.lesson_number }}</span>
         </span>
@@ -143,7 +148,7 @@ function studyLesson() {
       <!-- Action buttons -->
       <div class="pt-1">
         <button
-          v-if="lesson.status === 'ready'"
+          v-if="lesson.status === 'ready' && !props.isLocked"
           class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition-colors"
           @click="studyLesson"
         >
@@ -151,7 +156,18 @@ function studyLesson() {
             <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Study Lesson
+          {{ props.isCompleted ? 'Review Lesson' : 'Study Lesson' }}
+        </button>
+
+        <button
+          v-else-if="lesson.status === 'ready' && props.isLocked"
+          disabled
+          class="inline-flex items-center gap-2 rounded-lg bg-slate-800 border border-slate-700 px-4 py-2 text-sm font-medium text-slate-500 cursor-not-allowed"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          Locked
         </button>
 
         <button

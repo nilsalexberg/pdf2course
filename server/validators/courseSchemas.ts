@@ -39,3 +39,9 @@ export const courseCreateSchema = z.object({
 
 export type CourseCreateInput = z.infer<typeof courseCreateSchema>
 
+export const lessonCompleteSchema = z.object({
+  score_percent: z.number().int().min(0).max(100),
+})
+
+export type LessonCompleteInput = z.infer<typeof lessonCompleteSchema>
+

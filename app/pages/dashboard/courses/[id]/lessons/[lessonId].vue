@@ -39,6 +39,7 @@ const currentSlide = computed(() => slides.value[currentIndex.value] as Slide | 
 // ─── Exercise tracking ───────────────────────────────────────────────────────
 // Map stepIndex → { answered, correct }
 const exerciseResults = ref<Record<number, { correct: boolean }>>({})
+const completionSaved = ref(false)
 
 const totalExercises = computed(
   () => lesson.value?.content?.steps.filter(s => s.type !== 'section').length ?? 0,
@@ -86,6 +87,27 @@ const currentExercise = computed<Exercise | null>(() => {
   const s = currentSlide.value
   if (s?.kind !== 'step' || s.step.type === 'section') return null
   return s.step as Exercise
+})
+
+// ─── Completion ──────────────────────────────────────────────────────────────
+watch(currentSlide, async (slide) => {
+  if (
+    slide?.kind === 'summary'
+    && (scorePercent.value >= 70 || totalExercises.value === 0)
+    && !completionSaved.value
+  ) {
+    completionSaved.value = true
+    try {
+      await $fetch(`/api/courses/${courseId}/lessons/${lessonId}/complete`, {
+        method: 'POST',
+        body: { score_percent: scorePercent.value },
+      })
+    }
+    catch (err) {
+      console.warn('[lesson-complete] Failed to save completion:', err)
+      completionSaved.value = false
+    }
+  }
 })
 
 // ─── Progress ─────────────────────────────────────────────────────────────────

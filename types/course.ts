@@ -145,3 +145,12 @@ export interface Lesson {
 export interface ModuleWithLessons extends Module {
   lessons: Lesson[]
 }
+
+export interface LessonCompletion {
+  id: string
+  user_id: string
+  lesson_id: string
+  course_id: string
+  score_percent: number
+  completed_at: string
+}
