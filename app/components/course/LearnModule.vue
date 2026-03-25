@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ModuleWithLessons } from '@@/types/course'
+import type { Lesson, ModuleWithLessons } from '@@/types/course'
 
 defineProps<{
   mod: ModuleWithLessons
@@ -9,6 +9,7 @@ defineProps<{
 
 defineEmits<{
   toggleLesson: [lessonId: string]
+  'update:lesson': [lesson: Lesson]
 }>()
 
 function moduleColor(index: number) {
@@ -70,6 +71,7 @@ function moduleBadgeColor(index: number) {
         :is-expanded="expandedLesson === lesson.id"
         :is-last="lessonIndex === mod.lessons.length - 1"
         @toggle="$emit('toggleLesson', $event)"
+        @update:lesson="$emit('update:lesson', $event)"
       />
     </div>
   </div>

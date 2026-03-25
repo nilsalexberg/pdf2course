@@ -1,6 +1,6 @@
 import { createError } from 'h3'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Course, CoursePdf, DocumentChunk, DocumentSummary, GenerationStatus, Module, Lesson, ModuleWithLessons } from '../../types/course'
+import type { Course, CoursePdf, DocumentChunk, DocumentSummary, GenerationStatus, LessonContent, LessonStatus, Module, Lesson, ModuleWithLessons } from '../../types/course'
 
 export async function listCoursesByProducerId(client: SupabaseClient, producerId: string): Promise<Course[]> {
   const { data: courses, error } = await client
@@ -284,6 +284,74 @@ export async function listModulesWithLessons(
     ...(m as Module),
     lessons: lessonMap.get(m.id) ?? [],
   }))
+}
+
+export async function getLessonById(client: SupabaseClient, lessonId: string): Promise<Lesson> {
+  const { data, error } = await client
+    .from('lessons')
+    .select('*')
+    .eq('id', lessonId)
+    .single()
+
+  if (error) {
+    throw createError({ statusCode: 404, statusMessage: 'Lesson not found' })
+  }
+
+  return data as Lesson
+}
+
+export async function updateLessonStatus(
+  client: SupabaseClient,
+  lessonId: string,
+  status: LessonStatus,
+  generationError: string | null = null,
+): Promise<void> {
+  const { error } = await client
+    .from('lessons')
+    .update({ status, generation_error: generationError })
+    .eq('id', lessonId)
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+}
+
+export async function updateLessonContent(
+  client: SupabaseClient,
+  lessonId: string,
+  content: LessonContent,
+): Promise<Lesson> {
+  const { data, error } = await client
+    .from('lessons')
+    .update({ content, status: 'ready', generation_error: null })
+    .eq('id', lessonId)
+    .select()
+    .single()
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  return data as Lesson
+}
+
+export async function semanticSearchChunks(
+  client: SupabaseClient,
+  courseId: string,
+  queryEmbedding: number[],
+  matchCount: number = 5,
+): Promise<Array<{ id: string; content: string; similarity: number }>> {
+  const { data, error } = await client.rpc('match_document_chunks', {
+    p_course_id: courseId,
+    p_query_embedding: queryEmbedding,
+    p_match_count: matchCount,
+  })
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: `Semantic search failed: ${error.message}` })
+  }
+
+  return (data ?? []) as Array<{ id: string; content: string; similarity: number }>
 }
 
 export async function updateCourseGenerationStatus(

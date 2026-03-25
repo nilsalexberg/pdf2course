@@ -84,6 +84,48 @@ export interface Module {
 
 export type LessonStatus = 'not_generated' | 'generating' | 'ready' | 'failed'
 
+// ─── Lesson content types ──────────────────────────────────────────────────
+
+export interface LessonSection {
+  type: 'section'
+  title: string
+  content: string
+}
+
+export type LessonStep = LessonSection | Exercise
+
+export interface MultipleChoiceExercise {
+  type: 'multiple_choice'
+  question: string
+  options: string[]
+  correct_index: number
+  explanation: string
+}
+
+export interface TrueFalseExercise {
+  type: 'true_false'
+  statement: string
+  is_true: boolean
+  explanation: string
+}
+
+export interface FillBlankExercise {
+  type: 'fill_blank'
+  sentence: string
+  answer: string
+  explanation: string
+}
+
+export type Exercise = MultipleChoiceExercise | TrueFalseExercise | FillBlankExercise
+
+export interface LessonContent {
+  introduction: string
+  steps: LessonStep[]
+  summary: string
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+
 export interface Lesson {
   id: string
   module_id: string
@@ -95,6 +137,8 @@ export interface Lesson {
   key_topics: string[]
   rag_search_queries: string[]
   status: LessonStatus
+  content: LessonContent | null
+  generation_error: string | null
   created_at: string
 }
 

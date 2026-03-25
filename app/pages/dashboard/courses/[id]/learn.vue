@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CourseWithSignedCover, ModuleWithLessons } from '@@/types/course'
+import type { CourseWithSignedCover, Lesson, ModuleWithLessons } from '@@/types/course'
 
 definePageMeta({ middleware: ['auth', 'role'] })
 
@@ -21,6 +21,17 @@ const expandedLesson = ref<string | null>(null)
 
 function toggleLesson(lessonId: string) {
   expandedLesson.value = expandedLesson.value === lessonId ? null : lessonId
+}
+
+function updateLesson(lesson: Lesson) {
+  if (!data.value) return
+  data.value = {
+    ...data.value,
+    modules: data.value.modules.map(mod => ({
+      ...mod,
+      lessons: mod.lessons.map(l => l.id === lesson.id ? lesson : l),
+    })),
+  }
 }
 </script>
 
@@ -56,6 +67,7 @@ function toggleLesson(lessonId: string) {
           :mod-index="modIndex"
           :expanded-lesson="expandedLesson"
           @toggle-lesson="toggleLesson"
+          @update:lesson="updateLesson"
         />
 
         <div
