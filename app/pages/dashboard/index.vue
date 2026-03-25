@@ -96,8 +96,15 @@ async function deleteCourse(id: string) {
             </div>
             <div class="shrink-0 flex items-center pr-4 gap-4">
               <NuxtLink
+                v-if="course.generation_status === 'ready'"
+                :to="`/dashboard/courses/${course.id}/learn`"
+                class="text-sm font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
+              >
+                Learn
+              </NuxtLink>
+              <NuxtLink
                 :to="`/dashboard/courses/${course.id}/edit`"
-                class="text-sm text-emerald-400 hover:text-emerald-300"
+                class="text-sm text-slate-400 hover:text-slate-300 transition-colors"
               >
                 Edit
               </NuxtLink>

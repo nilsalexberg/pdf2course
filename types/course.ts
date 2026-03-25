@@ -97,3 +97,7 @@ export interface Lesson {
   status: LessonStatus
   created_at: string
 }
+
+export interface ModuleWithLessons extends Module {
+  lessons: Lesson[]
+}

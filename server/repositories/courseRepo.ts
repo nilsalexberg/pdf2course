@@ -1,6 +1,6 @@
 import { createError } from 'h3'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Course, CoursePdf, DocumentChunk, DocumentSummary, GenerationStatus, Module, Lesson } from '../../types/course'
+import type { Course, CoursePdf, DocumentChunk, DocumentSummary, GenerationStatus, Module, Lesson, ModuleWithLessons } from '../../types/course'
 
 export async function listCoursesByProducerId(client: SupabaseClient, producerId: string): Promise<Course[]> {
   const { data: courses, error } = await client
@@ -259,6 +259,31 @@ export async function updateCourseGeneratedAt(client: SupabaseClient, courseId: 
   if (error) {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
+}
+
+export async function listModulesWithLessons(
+  client: SupabaseClient,
+  courseId: string,
+): Promise<ModuleWithLessons[]> {
+  const [{ data: mods, error: modErr }, { data: less, error: lesErr }] = await Promise.all([
+    client.from('modules').select('*').eq('course_id', courseId).order('module_number', { ascending: true }),
+    client.from('lessons').select('*').eq('course_id', courseId).order('lesson_number', { ascending: true }),
+  ])
+
+  if (modErr) throw createError({ statusCode: 500, statusMessage: modErr.message })
+  if (lesErr) throw createError({ statusCode: 500, statusMessage: lesErr.message })
+
+  const lessonMap = new Map<string, Lesson[]>()
+  for (const l of less ?? []) {
+    const arr = lessonMap.get(l.module_id) ?? []
+    arr.push(l as Lesson)
+    lessonMap.set(l.module_id, arr)
+  }
+
+  return (mods ?? []).map(m => ({
+    ...(m as Module),
+    lessons: lessonMap.get(m.id) ?? [],
+  }))
 }
 
 export async function updateCourseGenerationStatus(
