@@ -25,6 +25,8 @@ export function createCourseGenerationWorker() {
     },
     {
       connection: { url: redisUrl },
+      lockDuration: 300_000, // 5 minutes — generation can take 2+ min
+      lockRenewTime: 60_000, // renew every 60s (must be < lockDuration/2)
     },
   )
 }

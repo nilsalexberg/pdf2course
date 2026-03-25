@@ -1,6 +1,7 @@
 import { createError } from 'h3'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Course, CoursePdf, DocumentChunk, DocumentSummary, GenerationStatus, LessonCompletion, LessonContent, LessonStatus, Module, Lesson, ModuleWithLessons } from '../../types/course'
+import { emitGenerationStatus } from '../utils/generationEvents'
 
 export async function listCoursesByProducerId(client: SupabaseClient, producerId: string): Promise<Course[]> {
   const { data: courses, error } = await client
@@ -408,6 +409,8 @@ export async function updateCourseGenerationStatus(
   if (error) {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
+
+  emitGenerationStatus(courseId, generationStatus, generationError)
 
   return course as Course
 }
