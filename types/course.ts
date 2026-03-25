@@ -72,3 +72,28 @@ export interface DocumentChunk {
   embedding: number[] | null
   created_at: string
 }
+
+export interface Module {
+  id: string
+  course_id: string
+  module_number: number
+  title: string
+  description: string
+  created_at: string
+}
+
+export type LessonStatus = 'not_generated' | 'generating' | 'ready' | 'failed'
+
+export interface Lesson {
+  id: string
+  module_id: string
+  course_id: string
+  lesson_number: number
+  title: string
+  description: string
+  learning_objectives: string[]
+  key_topics: string[]
+  rag_search_queries: string[]
+  status: LessonStatus
+  created_at: string
+}

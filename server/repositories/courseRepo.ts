@@ -1,6 +1,6 @@
 import { createError } from 'h3'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Course, CoursePdf, DocumentChunk, DocumentSummary, GenerationStatus } from '../../types/course'
+import type { Course, CoursePdf, DocumentChunk, DocumentSummary, GenerationStatus, Module, Lesson } from '../../types/course'
 
 export async function listCoursesByProducerId(client: SupabaseClient, producerId: string): Promise<Course[]> {
   const { data: courses, error } = await client
@@ -208,6 +208,54 @@ export async function updateCoursePdfAiSummary(
     .update({ ai_summary: aiSummary })
     .eq('id', pdfId)
 
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+}
+
+export async function deleteCourseModules(client: SupabaseClient, courseId: string): Promise<void> {
+  const { error } = await client.from('modules').delete().eq('course_id', courseId)
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+}
+
+export async function insertModules(
+  client: SupabaseClient,
+  modules: Array<{ course_id: string; module_number: number; title: string; description: string }>,
+): Promise<Module[]> {
+  const { data, error } = await client.from('modules').insert(modules).select()
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+  return (data ?? []) as Module[]
+}
+
+export async function insertLessons(
+  client: SupabaseClient,
+  lessons: Array<{
+    module_id: string
+    course_id: string
+    lesson_number: number
+    title: string
+    description: string
+    learning_objectives: string[]
+    key_topics: string[]
+    rag_search_queries: string[]
+  }>,
+): Promise<void> {
+  if (lessons.length === 0) return
+  const { error } = await client.from('lessons').insert(lessons)
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+}
+
+export async function updateCourseGeneratedAt(client: SupabaseClient, courseId: string): Promise<void> {
+  const { error } = await client
+    .from('courses')
+    .update({ generated_at: new Date().toISOString() })
+    .eq('id', courseId)
   if (error) {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }

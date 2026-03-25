@@ -10,10 +10,16 @@ import {
   listDocumentChunksByCourseId,
   batchUpdateDocumentChunkEmbeddings,
   updateCoursePdfAiSummary,
+  deleteCourseModules,
+  insertModules,
+  insertLessons,
+  updateCourseGeneratedAt,
 } from '../../repositories/courseRepo'
 import { embedBatch, EMBED_BATCH_SIZE } from '../gemini/embedChunks'
 import { summarizeDocument } from '../gemini/summarizeDocument'
+import { generateCourseStructure, type CourseStructure } from '../gemini/generateCourseStructure'
 import { cleanExtractedText, splitIntoChunks } from '../../utils/textProcessing'
+import type { Course, CoursePdf } from '../../../types/course'
 
 /**
  * Main function to orchestrate the course generation process.
@@ -49,23 +55,17 @@ export async function processCourseGeneration(courseId: string, adminClient: Sup
     await summarizeDocuments(adminClient, courseId, summarizablePdfs)
 
     // ─── STEP 6 — Generate course structure ───────────────────────────────
-    // - Update course status → 'generating_structure'
-    // - Build prompt with:
-    //     · course title and description (from course row)
-    //     · config: { num_modules, lessons_per_module } (from course row)
-    //     · course-level ai_summary (key_topics, themes, estimated_difficulty)
-    // - Send to Gemini 2.5 Flash, request JSON with modules and lessons per module
-    // - Validate that number of modules and lessons matches config
+    const freshCourse = await getCourseById(adminClient, courseId)
+    const pdfsForStructure = await listCoursePdfs(adminClient, courseId)
+    const structure = await generateCourseStructureStep(adminClient, courseId, freshCourse, pdfsForStructure)
 
     // ─── STEP 7 — Persist course structure ────────────────────────────────
-    // - Insert all modules into `modules` table (course_id, title, description, order)
-    // - For each module, insert its lessons into `lessons` table
-    //     · status = 'not_generated'  (content blocks generated later, on demand)
+    await persistCourseStructure(adminClient, courseId, structure)
 
     // ─── STEP 8 — Mark course as ready ────────────────────────────────────
-    // - Update course status → 'ready'
-    // - Update course.generated_at = now()
-    // - Log completion: job id, course id, total duration
+    await updateCourseGeneratedAt(adminClient, courseId)
+    await updateCourseGenerationStatus(adminClient, courseId, 'ready')
+    console.log(`[course-generation] Course ${courseId} status → ready`)
   }
   catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -187,6 +187,69 @@ async function embedDocumentChunks(
     embeddedCount += batch.length
     console.log(`[course-generation] Embedded ${embeddedCount}/${pending.length} chunks for course ${courseId}`)
   }
+}
+
+/**
+ * Calls Gemini to produce the course module/lesson structure, then validates it.
+ * Updates course status to 'generating_structure' before the API call.
+ */
+async function generateCourseStructureStep(
+  adminClient: SupabaseClient,
+  courseId: string,
+  course: Course,
+  pdfs: CoursePdf[],
+) {
+  await updateCourseGenerationStatus(adminClient, courseId, 'generating_structure')
+  console.log(`[course-generation] Course ${courseId} status → generating_structure`)
+
+  const structure = await generateCourseStructure(course, pdfs)
+  console.log(
+    `[course-generation] Structure generated for course ${courseId}: ${structure.modules.length} modules`,
+  )
+  return structure
+}
+
+/**
+ * Persists the generated course structure to the database.
+ * Inserts all modules first, then inserts all lessons for each module.
+ */
+async function persistCourseStructure(
+  adminClient: SupabaseClient,
+  courseId: string,
+  structure: CourseStructure,
+) {
+  // Idempotency: delete any modules (+ lessons via CASCADE) from a previous failed run
+  await deleteCourseModules(adminClient, courseId)
+
+  const moduleRows = structure.modules.map((m) => ({
+    course_id: courseId,
+    module_number: m.module_number,
+    title: m.title,
+    description: m.description,
+  }))
+
+  const insertedModules = await insertModules(adminClient, moduleRows)
+  console.log(`[course-generation] Persisted ${insertedModules.length} modules for course ${courseId}`)
+
+  const lessonRows = structure.modules.flatMap((m) => {
+    const dbModule = insertedModules.find((dbm) => dbm.module_number === m.module_number)
+    if (!dbModule) {
+      throw new Error(`Could not find inserted module for module_number ${m.module_number}`)
+    }
+    return m.lessons.map((l) => ({
+      module_id: dbModule.id,
+      course_id: courseId,
+      lesson_number: l.lesson_number,
+      title: l.title,
+      description: l.description,
+      learning_objectives: l.learning_objectives,
+      key_topics: l.key_topics,
+      rag_search_queries: l.rag_search_queries,
+    }))
+  })
+
+  await insertLessons(adminClient, lessonRows)
+  console.log(`[course-generation] Persisted ${lessonRows.length} lessons for course ${courseId}`)
 }
 
 /**
