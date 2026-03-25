@@ -8,8 +8,40 @@ definePageMeta({ middleware: ['auth', 'role'] })
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id as string
- 
+
 const { data: course, pending, error, refresh } = await useFetch<CourseWithSignedCover>(`/api/courses/${id}`)
+
+// ─── Realtime: auto-update status during generation ───────────────────────────
+const supabase = useSupabaseClient()
+
+type CourseStatusRow = Pick<CourseWithSignedCover, 'generation_status' | 'generation_error'>
+
+watch(
+  () => [course.value?.id, course.value?.generation_status] as const,
+  ([courseId, status], _prev, onCleanup) => {
+    if (!courseId || !status || !GENERATION_IN_PROGRESS.includes(status)) return
+
+    const channel = supabase
+      .channel(`course-generation-${courseId}`)
+      .on<CourseStatusRow>(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'courses', filter: `id=eq.${courseId}` },
+        (payload) => {
+          if (!course.value) return
+          course.value.generation_status = payload.new.generation_status
+          course.value.generation_error = payload.new.generation_error ?? null
+        },
+      )
+      .subscribe((channelStatus) => {
+        if (channelStatus === 'CHANNEL_ERROR') {
+          console.error(`[course-realtime] Channel error for course ${courseId}`)
+        }
+      })
+
+    onCleanup(() => supabase.removeChannel(channel))
+  },
+  { immediate: true },
+)
 
 const title = ref('')
 const description = ref('')
