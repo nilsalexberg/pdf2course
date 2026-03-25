@@ -1,4 +1,6 @@
 <script setup lang="ts">
+useHead({ title: 'Reset Password · pdf2course' })
+
 const client = useSupabaseClient()
 const router = useRouter()
 

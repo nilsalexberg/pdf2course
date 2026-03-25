@@ -2,6 +2,8 @@
 import type { CourseWithSignedCover } from '@@/types/course'
 
 definePageMeta({ middleware: ['auth', 'role'] })
+useHead({ title: 'Dashboard · pdf2course' })
+
 const { profile } = useProfile()
 
 const { data: courses, pending, error, refresh } = await useFetch<CourseWithSignedCover[]>('/api/courses', {

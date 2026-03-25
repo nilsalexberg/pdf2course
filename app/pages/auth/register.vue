@@ -1,4 +1,6 @@
 <script setup lang="ts">
+useHead({ title: 'Register · pdf2course' })
+
 const client = useSupabaseClient()
 const user = useSupabaseUser()
 const router = useRouter()

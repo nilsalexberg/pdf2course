@@ -11,6 +11,8 @@ const id = route.params.id as string
 
 const { data: course, pending, error, refresh } = await useFetch<CourseWithSignedCover>(`/api/courses/${id}`)
 
+useHead(computed(() => ({ title: course.value ? `${course.value.title} · pdf2course` : 'Edit Course · pdf2course' })))
+
 // ─── SSE: auto-update status during generation ────────────────────────────────
 watch(
   () => course.value?.id,

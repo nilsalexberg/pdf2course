@@ -1,5 +1,6 @@
 <script setup lang="ts">
 definePageMeta({ middleware: ['auth', 'role'] })
+useHead({ title: 'New Course · pdf2course' })
 import { COURSE_LANGUAGE_LEVELS, COURSE_FOCUS_OPTIONS, COURSE_LANGUAGES, COURSE_TONES } from '@@/types/courseConfig'
 
 const router = useRouter()

@@ -11,6 +11,8 @@ const { data: lesson, pending, error } = await useFetch<Lesson>(
   `/api/courses/${courseId}/lessons/${lessonId}`,
 )
 
+useHead(computed(() => ({ title: lesson.value ? `${lesson.value.title} · pdf2course` : 'Lesson · pdf2course' })))
+
 watchEffect(() => {
   if (!pending.value && lesson.value && lesson.value.status !== 'ready') {
     navigateTo(`/dashboard/courses/${courseId}/learn`)

@@ -14,6 +14,8 @@ interface LearnStructure {
 
 const { data, pending, error } = await useFetch<LearnStructure>(`/api/courses/${id}/learn`)
 
+useHead(computed(() => ({ title: data.value ? `${data.value.course.title} · pdf2course` : 'Learn · pdf2course' })))
+
 const totalLessons = computed(
   () => data.value?.modules.reduce((sum, m) => sum + m.lessons.length, 0) ?? 0,
 )

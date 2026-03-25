@@ -1,4 +1,6 @@
 <script setup lang="ts">
+useHead({ title: 'Forgot Password · pdf2course' })
+
 const client = useSupabaseClient()
 
 const email = ref('')
