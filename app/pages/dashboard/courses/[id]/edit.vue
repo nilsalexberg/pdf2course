@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CourseWithSignedCover, Course } from '@@/types/course'
+import { GENERATION_IN_PROGRESS } from '@@/types/course'
 import { COURSE_LANGUAGE_LEVELS, COURSE_FOCUS_OPTIONS, COURSE_LANGUAGES, COURSE_TONES } from '@@/types/courseConfig'
 
 definePageMeta({ middleware: ['auth', 'role'] })
@@ -255,8 +256,8 @@ async function handleSubmit() {
           </div>
           <UiButton
             type="button"
-            :loading="generating"
-            :disabled="course?.generation_status === 'processing' || course?.generation_status === 'generating_structure'"
+            :loading="generating || (course?.generation_status ? GENERATION_IN_PROGRESS.includes(course.generation_status) : false)"
+            :disabled="course?.generation_status ? GENERATION_IN_PROGRESS.includes(course.generation_status) : false"
             @click="handleGenerate"
           >
             {{ generating ? 'Starting…' : 'Generate course' }}
