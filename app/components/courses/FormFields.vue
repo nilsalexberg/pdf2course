@@ -49,7 +49,7 @@ const emit = defineEmits<{
     @change="emit('coverChange', $event)"
   />
 
-  <div class="grid grid-cols-2 gap-4">
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
     <UiInput
       id="num_modules"
       v-model.number="numModules"
@@ -68,9 +68,6 @@ const emit = defineEmits<{
       :min="1"
       :max="20"
     />
-  </div>
-
-  <div class="grid grid-cols-2 gap-4">
     <UiSelect
       id="language_level"
       v-model="languageLevel"
@@ -85,9 +82,6 @@ const emit = defineEmits<{
       :options="COURSE_FOCUS_OPTIONS"
       required
     />
-  </div>
-
-  <div class="grid grid-cols-2 gap-4">
     <UiSelect
       id="language"
       v-model="language"

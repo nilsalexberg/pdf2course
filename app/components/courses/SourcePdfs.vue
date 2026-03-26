@@ -100,16 +100,13 @@ function formatSize(bytes: number) {
         </div>
       </div>
     </div>
-
-    <div class="pt-4 border-t border-slate-800">
-      <UiFileInput
-        label="Add more PDFs"
-        accept="application/pdf"
-        multiple
-        help="Upload additional sources. Max 5 PDFs total, 50MB each."
-        @change="onFilesChange"
-      />
-    </div>
+    <UiFileInput
+      label="Add more PDFs"
+      accept="application/pdf"
+      multiple
+      help="Upload additional sources. Max 5 PDFs total, 50MB each."
+      @change="onFilesChange"
+    />
 
     <p v-if="errorMessage" class="text-xs text-red-400">
       {{ errorMessage }}
