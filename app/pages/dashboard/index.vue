@@ -82,7 +82,8 @@ async function deleteCourse(id: string) {
               <p v-if="course.description" class="text-sm text-slate-400 line-clamp-2 mt-0.5">
                 {{ course.description }}
               </p>
-              <p class="text-xs text-slate-500 mt-2">
+              <div class="flex items-center gap-2 text-xs text-slate-500 mt-2">
+                <CoursesGenerationStatus :status="course?.generation_status ?? 'idle'" />
                 <span
                   class="inline-flex items-center rounded-full px-2 py-0.5 capitalize"
                   :class="{
@@ -94,7 +95,7 @@ async function deleteCourse(id: string) {
                 >
                   {{ course.status.replace('_', ' ') }}
                 </span>
-              </p>
+              </div>
             </div>
             <div class="shrink-0 flex items-center pr-4 gap-4">
               <NuxtLink
