@@ -30,14 +30,30 @@ export async function uploadCourseCover(client: any, path: string, file: Multipa
   if (error) {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
+  signedUrlCache.delete(path)
 }
 
+const SAFETY_MARGIN_SEC = 300 // refresh 5 min before expiry
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>()
+
 export async function createSignedCoverUrl(client: any, path: string, expiresSec: number) {
+  const now = Date.now()
+  const cached = signedUrlCache.get(path)
+  if (cached) {
+    if (cached.expiresAt > now) return cached.url
+    signedUrlCache.delete(path)
+  }
+
   const { data, error } = await client.storage.from('course-covers').createSignedUrl(path, expiresSec)
   if (error) {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
-  return data?.signedUrl ?? null
+
+  const url = data?.signedUrl ?? null
+  if (url) {
+    signedUrlCache.set(path, { url, expiresAt: now + (expiresSec - SAFETY_MARGIN_SEC) * 1000 })
+  }
+  return url
 }
 
 export async function deleteCourseCover(client: any, path: string) {
