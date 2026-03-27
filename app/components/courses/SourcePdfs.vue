@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CoursePdfWithSignedUrl } from '@@/types/course'
+import type { CoursePdf } from '@@/types/course'
 
 const props = defineProps<{
   courseId: string
@@ -9,7 +9,19 @@ const emit = defineEmits<{
   'update:stagedPdfs': [files: File[]]
 }>()
 
-const { data: pdfs, refresh, pending } = await useFetch<CoursePdfWithSignedUrl[]>(`/api/courses/${props.courseId}/pdfs`)
+const { data: pdfs, refresh, pending } = await useFetch<CoursePdf[]>(`/api/courses/${props.courseId}/pdfs`)
+
+const openingId = ref<string | null>(null)
+
+async function handleOpen(pdf: CoursePdf) {
+  openingId.value = pdf.id
+  try {
+    const { url } = await $fetch<{ url: string }>(`/api/courses/${props.courseId}/pdfs/${pdf.id}/signed-url`)
+    window.open(url, '_blank')
+  } finally {
+    openingId.value = null
+  }
+}
 
 const deletingId = ref<string | null>(null)
 const errorMessage = ref<string | null>(null)
@@ -77,13 +89,15 @@ function formatSize(bytes: number) {
           </div>
 
           <div class="flex items-center gap-2">
-            <a 
-              :href="pdf.url_signed" 
-              target="_blank"
-              class="text-xs font-medium text-emerald-400 hover:text-emerald-300 px-2 py-1"
+            <button
+              type="button"
+              class="text-xs font-medium text-emerald-400 hover:text-emerald-300 px-2 py-1 disabled:opacity-50"
+              :disabled="openingId === pdf.id"
+              @click="handleOpen(pdf)"
             >
-              Open
-            </a>
+              <span v-if="openingId === pdf.id">Opening...</span>
+              <span v-else>Open</span>
+            </button>
             
             <button
               type="button"

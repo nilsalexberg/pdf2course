@@ -1,8 +1,6 @@
 import { serverSupabaseClient } from '#supabase/server'
 import { requireUser } from '../../../auth/requireUser'
 import { getCourseById, listCoursePdfs } from '../../../repositories/courseRepo'
-import { createSignedPdfUrl } from '../../../storage/coursePdfs'
-import type { CoursePdfWithSignedUrl } from '../../../../types/course'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
@@ -18,14 +16,5 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   }
 
-  const pdfs = await listCoursePdfs(client, courseId)
-
-  const pdfsWithUrls: CoursePdfWithSignedUrl[] = await Promise.all(
-    pdfs.map(async (pdf) => ({
-      ...pdf,
-      url_signed: await createSignedPdfUrl(client, pdf.file_path),
-    })),
-  )
-
-  return pdfsWithUrls
+  return listCoursePdfs(client, courseId)
 })
