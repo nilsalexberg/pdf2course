@@ -10,6 +10,7 @@ import {
   listDocumentChunksByCourseId,
   batchUpdateDocumentChunkEmbeddings,
   updateCoursePdfAiSummary,
+  deleteLessonCompletionsByCourseId,
   deleteCourseModules,
   insertModules,
   insertLessons,
@@ -218,7 +219,9 @@ async function persistCourseStructure(
   courseId: string,
   structure: CourseStructure,
 ) {
-  // Idempotency: delete any modules (+ lessons via CASCADE) from a previous failed run
+  // Idempotency: wipe all user progress and course structure from any previous run.
+  // Order matters: completions reference lessons, so delete them before modules cascade-deletes lessons.
+  await deleteLessonCompletionsByCourseId(adminClient, courseId)
   await deleteCourseModules(adminClient, courseId)
 
   const moduleRows = structure.modules.map((m) => ({

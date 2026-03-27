@@ -430,6 +430,13 @@ export async function upsertLessonCompletion(
   return data as LessonCompletion
 }
 
+export async function deleteLessonCompletionsByCourseId(client: SupabaseClient, courseId: string): Promise<void> {
+  const { error } = await client.from('lesson_completions').delete().eq('course_id', courseId)
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+}
+
 export async function updateCourseGenerationStatus(
   client: SupabaseClient,
   courseId: string,
