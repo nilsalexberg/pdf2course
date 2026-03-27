@@ -242,7 +242,6 @@ export async function insertLessons(
     description: string
     learning_objectives: string[]
     key_topics: string[]
-    rag_search_queries: string[]
   }>,
 ): Promise<void> {
   if (lessons.length === 0) return

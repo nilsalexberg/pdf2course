@@ -244,7 +244,6 @@ async function persistCourseStructure(
       description: l.description,
       learning_objectives: l.learning_objectives,
       key_topics: l.key_topics,
-      rag_search_queries: l.rag_search_queries,
     }))
   })
 

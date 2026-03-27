@@ -135,7 +135,6 @@ export interface Lesson {
   description: string
   learning_objectives: string[]
   key_topics: string[]
-  rag_search_queries: string[]
   status: LessonStatus
   content: LessonContent | null
   generation_error: string | null

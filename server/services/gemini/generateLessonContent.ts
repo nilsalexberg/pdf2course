@@ -68,10 +68,20 @@ async function retrieveContext(
   client: SupabaseClient,
   lesson: Lesson,
 ): Promise<Array<{ id: string; content: string; similarity: number }>> {
-  if (!lesson.rag_search_queries?.length) return []
+  const MIN_QUERIES = 3
+
+  let queries = lesson.key_topics
+
+  if (queries.length < MIN_QUERIES) {
+    queries = [...queries, ...lesson.learning_objectives]
+  }
+
+  if (queries.length < MIN_QUERIES) {
+    queries = [...queries, lesson.title]
+  }
 
   // Embed all search queries in a single batch call
-  const embeddings = await embedBatch(lesson.rag_search_queries)
+  const embeddings = await embedBatch(queries)
 
   // Search for similar chunks for each query
   const results = await Promise.all(

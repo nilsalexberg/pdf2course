@@ -10,7 +10,6 @@ const lessonSchema = z.object({
   description: z.string(),
   learning_objectives: z.array(z.string()),
   key_topics: z.array(z.string()),
-  rag_search_queries: z.array(z.string()),
 })
 
 const moduleSchema = z.object({
@@ -59,8 +58,7 @@ ${summariesText}
    - A clear title and concise description
    - 2–4 specific, measurable learning_objectives (start with action verbs: "Understand", "Apply", "Calculate", etc.)
    - 3–6 key_topics that will be covered
-   - 2–4 rag_search_queries: precise questions or terms to semantically search the source documents for relevant content when generating lesson material — make these specific and varied
-5. All text (titles, descriptions, objectives, topics, queries) must be written in: ${config.language ?? 'English'}
+5. All text (titles, descriptions, objectives, topics) must be written in: ${config.language ?? 'English'}
 6. Respond with ONLY the JSON structure described below, no markdown fences or extra text.
 
 ## Required JSON Structure
@@ -77,7 +75,6 @@ ${summariesText}
           "description": "Concise scope of this lesson",
           "learning_objectives": ["Objective 1", "Objective 2"],
           "key_topics": ["Topic A", "Topic B"],
-          "rag_search_queries": ["Specific query for semantic search 1", "Query 2"]
         }
       ]
     }
