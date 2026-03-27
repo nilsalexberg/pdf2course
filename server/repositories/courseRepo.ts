@@ -287,6 +287,44 @@ export async function listModulesWithLessons(
   }))
 }
 
+export async function updateModule(
+  client: SupabaseClient,
+  moduleId: string,
+  input: { title: string; description: string },
+): Promise<Module> {
+  const { data, error } = await client
+    .from('modules')
+    .update(input)
+    .eq('id', moduleId)
+    .select()
+    .single()
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  return data as Module
+}
+
+export async function updateLesson(
+  client: SupabaseClient,
+  lessonId: string,
+  input: { title: string; description: string; learning_objectives: string[]; key_topics: string[] },
+): Promise<Lesson> {
+  const { data, error } = await client
+    .from('lessons')
+    .update(input)
+    .eq('id', lessonId)
+    .select()
+    .single()
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  return data as Lesson
+}
+
 export async function getLessonById(client: SupabaseClient, lessonId: string): Promise<Lesson> {
   const { data, error } = await client
     .from('lessons')
