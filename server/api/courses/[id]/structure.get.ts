@@ -2,9 +2,9 @@ import { serverSupabaseClient } from '#supabase/server'
 import { requireUser } from '../../../auth/requireUser'
 import { requireRole } from '../../../auth/requireRole'
 import { getCourseById, listModulesWithLessons } from '../../../repositories/courseRepo'
-import type { ModuleWithLessons } from '../../../../types/course'
+import type { CourseStructure } from '../../../../types/course'
 
-export default defineEventHandler(async (event): Promise<ModuleWithLessons[]> => {
+export default defineEventHandler(async (event): Promise<CourseStructure> => {
   const user = await requireUser(event)
   const client = await serverSupabaseClient(event)
   await requireRole(event, client, user.id)
@@ -19,5 +19,8 @@ export default defineEventHandler(async (event): Promise<ModuleWithLessons[]> =>
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   }
 
-  return await listModulesWithLessons(client, id)
+  return {
+    course_title: course.title,
+    modules: await listModulesWithLessons(client, id),
+  }
 })

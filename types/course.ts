@@ -146,6 +146,11 @@ export interface ModuleWithLessons extends Module {
   lessons: Lesson[]
 }
 
+export interface CourseStructure {
+  course_title: string
+  modules: ModuleWithLessons[]
+}
+
 export interface LessonCompletion {
   id: string
   user_id: string

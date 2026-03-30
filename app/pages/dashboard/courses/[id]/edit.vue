@@ -14,8 +14,7 @@ const { setBreadcrumbs } = useBreadcrumbs()
 watch(course, (c) => {
   setBreadcrumbs([
     { label: 'Dashboard', to: '/dashboard' },
-    { label: c?.title || 'Course', to: `/dashboard/courses/${id}/learn` },
-    { label: 'Edit' }
+    { label: c?.title || 'Course' },
   ])
 }, { immediate: true })
 
@@ -52,8 +51,8 @@ const stagedPdfs = ref<File[]>([])
 const activeTab = ref('edit')
 
 const tabs = [
-  { key: 'edit', label: 'Edit' },
-  { key: 'publish', label: 'Publish' },
+  { key: 'edit', label: 'Settings' },
+  { key: 'publish', label: 'Publication' },
 ]
 
 async function handleSubmit() {
