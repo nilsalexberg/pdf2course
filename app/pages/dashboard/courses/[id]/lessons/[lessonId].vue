@@ -13,6 +13,15 @@ const { data: lesson, pending, error } = await useFetch<Lesson>(
 
 useHead(computed(() => ({ title: lesson.value ? `${lesson.value.title} · pdf2course` : 'Lesson · pdf2course' })))
 
+const { setBreadcrumbs } = useBreadcrumbs()
+watch(lesson as any, (l: Lesson | null) => {
+  setBreadcrumbs([
+    { label: 'Dashboard', to: '/dashboard' },
+    { label: 'Course', to: `/dashboard/courses/${courseId}/learn` },
+    { label: l?.title || 'Lesson' }
+  ])
+}, { immediate: true })
+
 watchEffect(() => {
   if (!pending.value && lesson.value && lesson.value.status !== 'ready') {
     navigateTo(`/dashboard/courses/${courseId}/learn`)
@@ -131,9 +140,6 @@ const progressPercent = computed(() =>
     <div v-else-if="error" class="flex items-center justify-center min-h-screen">
       <div class="text-center space-y-4">
         <p class="text-red-400">{{ error.message }}</p>
-        <NuxtLink :to="`/dashboard/courses/${courseId}/learn`" class="text-sm text-emerald-400 hover:text-emerald-300">
-          ← Back to course
-        </NuxtLink>
       </div>
     </div>
 
@@ -242,7 +248,7 @@ const progressPercent = computed(() =>
               :to="`/dashboard/courses/${courseId}/learn`"
               class="inline-flex items-center gap-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition-colors"
             >
-              ← Back to course
+              Finish Lesson
             </NuxtLink>
           </div>
         </template>

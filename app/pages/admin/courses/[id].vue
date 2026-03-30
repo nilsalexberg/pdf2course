@@ -10,6 +10,14 @@ const id = route.params.id as string
 const { data: course, pending: coursePending, error: courseError, refresh: refreshCourse } = await useFetch<CourseWithSignedCover>(`/api/admin/courses/${id}`)
 const { data: modules, pending: modulesPending } = useFetch<ModuleWithLessons[]>(`/api/admin/courses/${id}/structure`, { default: () => [] })
 
+const { setBreadcrumbs } = useBreadcrumbs()
+watch(course as any, (c: CourseWithSignedCover | null) => {
+  setBreadcrumbs([
+    { label: 'Admin', to: '/admin' },
+    { label: c?.title || 'Course' }
+  ])
+}, { immediate: true })
+
 const rejectingId = ref<string | null>(null)
 const rejectReason = ref('')
 const actionError = ref<string | null>(null)
@@ -57,11 +65,6 @@ const statusClass: Record<string, string> = {
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-50">
     <div class="max-w-4xl mx-auto px-4 py-8">
-      <div class="mb-6">
-        <NuxtLink to="/admin" class="text-sm text-slate-400 hover:text-slate-300 transition-colors">
-          ← Back to admin
-        </NuxtLink>
-      </div>
 
       <div v-if="coursePending" class="flex justify-center py-16">
         <UiSpinner class="w-8 h-8 text-emerald-500" />

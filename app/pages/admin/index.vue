@@ -4,6 +4,11 @@ import type { CourseWithSignedCover } from '@@/types/course'
 definePageMeta({ middleware: ['auth', 'role'] })
 useHead({ title: 'Admin · pdf2course' })
 
+const { setBreadcrumbs } = useBreadcrumbs()
+setBreadcrumbs([
+  { label: 'Admin' }
+])
+
 const { data: courses, pending, error, refresh } = await useFetch<CourseWithSignedCover[]>('/api/admin/courses', {
   default: () => [],
 })
@@ -62,12 +67,6 @@ const statusClass: Record<string, string> = {
         <h1 class="text-2xl font-semibold text-white">
           Admin — Courses
         </h1>
-        <NuxtLink
-          to="/dashboard"
-          class="text-sm text-slate-400 hover:text-slate-300 transition-colors"
-        >
-          Go to dashboard
-        </NuxtLink>
       </div>
 
       <p v-if="error" class="text-sm text-red-400 mb-4">

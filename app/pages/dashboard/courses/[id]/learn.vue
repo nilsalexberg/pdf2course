@@ -16,6 +16,14 @@ const { data, pending, error } = await useFetch<LearnStructure>(`/api/courses/${
 
 useHead(computed(() => ({ title: data.value ? `${data.value.course.title} · pdf2course` : 'Learn · pdf2course' })))
 
+const { setBreadcrumbs } = useBreadcrumbs()
+watch(data as any, (d: LearnStructure | null) => {
+  setBreadcrumbs([
+    { label: 'Dashboard', to: '/dashboard' },
+    { label: d?.course.title || 'Course' }
+  ])
+}, { immediate: true })
+
 const totalLessons = computed(
   () => data.value?.modules.reduce((sum, m) => sum + m.lessons.length, 0) ?? 0,
 )
@@ -74,9 +82,6 @@ function updateLesson(lesson: Lesson) {
     <div v-else-if="error" class="flex items-center justify-center min-h-screen">
       <div class="text-center space-y-4">
         <p class="text-red-400">{{ error.message }}</p>
-        <NuxtLink to="/dashboard" class="text-sm text-emerald-400 hover:text-emerald-300">
-          ← Back to dashboard
-        </NuxtLink>
       </div>
     </div>
 

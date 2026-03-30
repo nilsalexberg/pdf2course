@@ -11,6 +11,15 @@ const { data: course, pending, error, refresh } = await useFetch<CourseWithSigne
 
 useHead(computed(() => ({ title: course.value ? `${course.value.title} · pdf2course` : 'Edit Course · pdf2course' })))
 
+const { setBreadcrumbs } = useBreadcrumbs()
+watch(course as any, (c: CourseWithSignedCover | null) => {
+  setBreadcrumbs([
+    { label: 'Dashboard', to: '/dashboard' },
+    { label: c?.title || 'Course', to: `/dashboard/courses/${id}/learn` },
+    { label: 'Edit' }
+  ])
+}, { immediate: true })
+
 const { title, description, numModules, lessonsPerModule, languageLevel, focus, language, tone, loading, errorMessage, onCoverChange, fillForm, buildFormData } = useCourseForm()
 
 // ─── SSE: auto-update status during generation ────────────────────────────────
@@ -93,11 +102,6 @@ async function handleSubmit() {
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-50">
     <div class="max-w-4xl mx-auto px-4 py-8">
-      <div class="mb-6">
-        <NuxtLink to="/dashboard" class="text-sm text-slate-400 hover:text-slate-300">
-          ← Back to dashboard
-        </NuxtLink>
-      </div>
 
       <div v-if="pending" class="flex justify-center py-12">
         <UiSpinner class="w-8 h-8 text-emerald-500" />
@@ -105,9 +109,6 @@ async function handleSubmit() {
 
       <div v-else-if="error" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-8 text-center text-red-400">
         <p>{{ error.message || 'Failed to load course details.' }}</p>
-        <NuxtLink to="/dashboard" class="mt-4 inline-block text-sm text-emerald-400">
-          Back to dashboard
-        </NuxtLink>
       </div>
 
       <div v-else class="bg-slate-900/80 border border-slate-800 rounded-2xl p-8 shadow-2xl">

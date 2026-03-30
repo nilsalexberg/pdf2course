@@ -2,6 +2,12 @@
 definePageMeta({ middleware: ['auth', 'role'] })
 useHead({ title: 'New Course · pdf2course' })
 
+const { setBreadcrumbs } = useBreadcrumbs()
+setBreadcrumbs([
+  { label: 'Dashboard', to: '/dashboard' },
+  { label: 'New Course' }
+])
+
 const router = useRouter()
 const { title, description, numModules, lessonsPerModule, languageLevel, focus, language, tone, loading, errorMessage, onCoverChange, buildFormData } = useCourseForm()
 
@@ -73,11 +79,6 @@ async function handleSubmit() {
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-50">
     <div class="max-w-4xl mx-auto px-4 py-8">
-      <div class="mb-6">
-        <NuxtLink to="/dashboard" class="text-sm text-slate-400 hover:text-slate-300">
-          ← Back to dashboard
-        </NuxtLink>
-      </div>
 
       <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-8 shadow-2xl">
         <h1 class="text-2xl font-semibold text-white mb-6">
