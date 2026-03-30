@@ -430,6 +430,44 @@ export async function upsertLessonCompletion(
   return data as LessonCompletion
 }
 
+export async function listAllCourses(client: SupabaseClient): Promise<Course[]> {
+  const { data: courses, error } = await client
+    .from('courses')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  return (courses ?? []) as Course[]
+}
+
+export async function updateCourseStatus(
+  client: SupabaseClient,
+  courseId: string,
+  status: import('../../types/course').CourseStatus,
+  rejectionReason?: string | null,
+): Promise<Course> {
+  const update: Record<string, unknown> = { status }
+  if (rejectionReason !== undefined) {
+    update.rejection_reason = rejectionReason
+  }
+
+  const { data: course, error } = await client
+    .from('courses')
+    .update(update)
+    .eq('id', courseId)
+    .select()
+    .single()
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  return course as Course
+}
+
 export async function deleteLessonCompletionsByCourseId(client: SupabaseClient, courseId: string): Promise<void> {
   const { error } = await client.from('lesson_completions').delete().eq('course_id', courseId)
   if (error) {

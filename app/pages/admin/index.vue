@@ -1,12 +1,218 @@
 <script setup lang="ts">
+import type { CourseWithSignedCover } from '@@/types/course'
+
+definePageMeta({ middleware: ['auth', 'role'] })
 useHead({ title: 'Admin · pdf2course' })
+
+const { data: courses, pending, error, refresh } = await useFetch<CourseWithSignedCover[]>('/api/admin/courses', {
+  default: () => [],
+})
+
+const rejectingId = ref<string | null>(null)
+const rejectReason = ref('')
+const actionError = ref<string | null>(null)
+
+const pendingReview = computed(() => courses.value?.filter(c => c.status === 'pending_review') ?? [])
+const otherCourses = computed(() => courses.value?.filter(c => c.status !== 'pending_review') ?? [])
+
+async function approve(id: string) {
+  actionError.value = null
+  try {
+    await $fetch(`/api/admin/courses/${id}/approve`, { method: 'POST' })
+    await refresh()
+  } catch (err: any) {
+    actionError.value = err.data?.statusMessage || 'Failed to approve course'
+  }
+}
+
+function openReject(id: string) {
+  rejectingId.value = id
+  rejectReason.value = ''
+  actionError.value = null
+}
+
+async function confirmReject() {
+  if (!rejectingId.value) return
+  actionError.value = null
+  try {
+    await $fetch(`/api/admin/courses/${rejectingId.value}/reject`, {
+      method: 'POST',
+      body: { reason: rejectReason.value },
+    })
+    rejectingId.value = null
+    rejectReason.value = ''
+    await refresh()
+  } catch (err: any) {
+    actionError.value = err.data?.statusMessage || 'Failed to reject course'
+  }
+}
+
+const statusClass: Record<string, string> = {
+  draft: 'bg-slate-700 text-slate-300',
+  pending_review: 'bg-amber-900/50 text-amber-200',
+  approved: 'bg-emerald-900/50 text-emerald-200',
+  rejected: 'bg-red-900/50 text-red-200',
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center">
-    <p class="text-sm text-slate-300">
-      Admin dashboard (placeholder).
-    </p>
+  <div class="min-h-screen bg-slate-950 text-slate-50">
+    <div class="max-w-5xl mx-auto px-4 py-8">
+      <div class="flex items-center justify-between mb-8">
+        <h1 class="text-2xl font-semibold text-white">
+          Admin — Courses
+        </h1>
+        <NuxtLink
+          to="/dashboard"
+          class="text-sm text-slate-400 hover:text-slate-300 transition-colors"
+        >
+          Go to dashboard
+        </NuxtLink>
+      </div>
+
+      <p v-if="error" class="text-sm text-red-400 mb-4">
+        {{ error.message }}
+      </p>
+      <p v-if="actionError" class="text-sm text-red-400 mb-4">
+        {{ actionError }}
+      </p>
+
+      <div v-if="pending" class="flex justify-center py-16">
+        <UiSpinner class="w-8 h-8 text-emerald-500" />
+      </div>
+
+      <template v-else>
+        <!-- Pending Review -->
+        <section class="mb-10">
+          <h2 class="text-lg font-semibold text-amber-300 mb-4">
+            Pending review
+            <span class="ml-2 text-sm font-normal text-slate-400">({{ pendingReview.length }})</span>
+          </h2>
+
+          <div
+            v-if="!pendingReview.length"
+            class="rounded-2xl border border-slate-800 bg-slate-900/80 p-8 text-center text-slate-400 text-sm"
+          >
+            No courses awaiting review.
+          </div>
+
+          <ul v-else class="space-y-3">
+            <CoursesCourseCard
+              v-for="course in pendingReview"
+              :key="course.id"
+              :course="course"
+              :highlighted="true"
+              cover-size="md"
+              :title-to="`/admin/courses/${course.id}`"
+            >
+              <template #meta>
+                <p class="text-xs text-slate-500">
+                  {{ new Date(course.created_at).toLocaleDateString() }}
+                </p>
+              </template>
+              <template #actions>
+                <button
+                  class="text-sm font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
+                  @click="approve(course.id)"
+                >
+                  Approve
+                </button>
+                <button
+                  class="text-sm text-red-400 hover:text-red-300 transition-colors"
+                  @click="openReject(course.id)"
+                >
+                  Reject
+                </button>
+              </template>
+            </CoursesCourseCard>
+          </ul>
+        </section>
+
+        <!-- All other courses -->
+        <section>
+          <h2 class="text-lg font-semibold text-slate-300 mb-4">
+            All courses
+            <span class="ml-2 text-sm font-normal text-slate-400">({{ otherCourses.length }})</span>
+          </h2>
+
+          <div
+            v-if="!otherCourses.length"
+            class="rounded-2xl border border-slate-800 bg-slate-900/80 p-8 text-center text-slate-400 text-sm"
+          >
+            No other courses.
+          </div>
+
+          <ul v-else class="space-y-3">
+            <CoursesCourseCard
+              v-for="course in otherCourses"
+              :key="course.id"
+              :course="course"
+              cover-size="sm"
+              :title-to="`/admin/courses/${course.id}`"
+            >
+              <template #meta>
+                <div class="flex items-center gap-2">
+                  <span
+                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs capitalize"
+                    :class="statusClass[course.status]"
+                  >
+                    {{ course.status.replace('_', ' ') }}
+                  </span>
+                  <span class="text-xs text-slate-500">
+                    {{ new Date(course.created_at).toLocaleDateString() }}
+                  </span>
+                </div>
+              </template>
+              <template v-if="course.status === 'approved'" #actions>
+                <button
+                  class="text-sm text-slate-400 hover:text-slate-300 transition-colors"
+                  @click="openReject(course.id)"
+                >
+                  Revoke
+                </button>
+              </template>
+            </CoursesCourseCard>
+          </ul>
+        </section>
+      </template>
+    </div>
+
+    <!-- Reject modal -->
+    <div
+      v-if="rejectingId"
+      class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4"
+      @click.self="rejectingId = null"
+    >
+      <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md">
+        <h3 class="text-lg font-semibold text-white mb-4">
+          Reject course
+        </h3>
+        <UiTextarea
+          v-model="rejectReason"
+          placeholder="Explain why this course is being rejected..."
+          class="mb-4"
+          :rows="4"
+        />
+        <p v-if="actionError" class="text-sm text-red-400 mb-3">
+          {{ actionError }}
+        </p>
+        <div class="flex gap-3 justify-end">
+          <UiButton
+            variant="secondary"
+            :block="false"
+            @click="rejectingId = null"
+          >
+            Cancel
+          </UiButton>
+          <button
+            class="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors bg-red-600 text-white hover:bg-red-500 disabled:opacity-60 disabled:cursor-not-allowed"
+            :disabled="!rejectReason.trim()"
+            @click="confirmReject"
+          >
+            Reject
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
-

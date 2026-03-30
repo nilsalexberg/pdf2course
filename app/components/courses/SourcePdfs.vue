@@ -3,6 +3,7 @@ import type { CoursePdf } from '@@/types/course'
 
 const props = defineProps<{
   courseId: string
+  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -100,6 +101,7 @@ function formatSize(bytes: number) {
             </button>
             
             <button
+              v-if="!readonly"
               type="button"
               class="p-1.5 text-slate-400 hover:text-red-400 disabled:opacity-50 transition-colors"
               :disabled="!!deletingId"
@@ -115,6 +117,7 @@ function formatSize(bytes: number) {
       </div>
     </div>
     <UiFileInput
+      v-if="!readonly"
       label="Add more PDFs"
       accept="application/pdf"
       multiple

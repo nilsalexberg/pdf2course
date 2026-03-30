@@ -1,8 +1,13 @@
-export default defineNuxtRouteMiddleware((to) => {
+export default defineNuxtRouteMiddleware(async (to) => {
   const user = useSupabaseUser()
-  const profile = useState<{ role?: string } | null>('profile', () => null)
+  const { profile, refresh } = useProfile()
 
   if (!user.value) return
+
+  // Ensure profile is loaded if it's currently null
+  if (!profile.value) {
+    await refresh()
+  }
 
   const path = to.fullPath
 
@@ -13,4 +18,5 @@ export default defineNuxtRouteMiddleware((to) => {
     }
   }
 })
+
 

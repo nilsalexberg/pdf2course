@@ -22,6 +22,7 @@ export interface Course {
   description: string | null
   cover_url: string | null
   status: CourseStatus
+  rejection_reason: string | null
   generation_status: GenerationStatus
   generation_error: string | null
   config: CourseConfig

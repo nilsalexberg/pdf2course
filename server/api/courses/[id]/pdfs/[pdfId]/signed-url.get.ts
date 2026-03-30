@@ -1,5 +1,6 @@
 import { serverSupabaseClient } from '#supabase/server'
 import { requireUser } from '../../../../../auth/requireUser'
+import { requireRole } from '../../../../../auth/requireRole'
 import { getCourseById, getCoursePdfById } from '../../../../../repositories/courseRepo'
 import { createSignedPdfUrl } from '../../../../../storage/coursePdfs'
 
@@ -13,8 +14,9 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Missing course ID or PDF ID' })
   }
 
+  const role = await requireRole(event, client, user.id)
   const course = await getCourseById(client, courseId)
-  if (course.producer_id !== user.id) {
+  if (course.producer_id !== user.id && role !== 'admin') {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   }
 
