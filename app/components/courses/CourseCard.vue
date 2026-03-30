@@ -20,7 +20,7 @@ const coverClass = computed(() => ({ sm: 'w-20', md: 'w-24', lg: 'w-32' }[props.
     :class="highlighted ? 'border-amber-800/40' : 'border-slate-800'"
   >
     <div v-if="course.cover_url_signed" :class="`${coverClass} shrink-0 bg-slate-800`">
-      <img :src="course.cover_url_signed" :alt="course.title" class="w-full aspect-square object-cover">
+      <img :src="course.cover_url_signed" :alt="course.title" class="w-full h-full aspect-square object-cover">
     </div>
     <div class="flex-1 min-w-0 py-4">
       <NuxtLink

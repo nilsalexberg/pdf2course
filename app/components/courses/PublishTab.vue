@@ -119,13 +119,14 @@ async function handleSubmitReview() {
           :to="`/dashboard/courses/${courseId}/structure`"
           variant="secondary"
           :block="false"
+          :disabled="!canRegenerate || isGenerationInProgress"
         >
           Edit structure
         </UiButton>
       </div>
 
       <p v-if="!canRegenerate" class="text-xs text-amber-400/80">
-        Re-generation is disabled while the course is under review or published.
+        Re-generation or editing is disabled while the course is under review or published.
       </p>
 
       <!-- Re-generate confirmation dialog -->

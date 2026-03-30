@@ -26,7 +26,7 @@ const buttonClasses = computed(() => [
 </script>
 
 <template>
-  <NuxtLink v-if="to" :to="to" :class="buttonClasses">
+  <NuxtLink v-if="to && !disabled" :to="to" :class="buttonClasses">
     <slot />
   </NuxtLink>
   <button v-else :type="type" :disabled="disabled || loading" :class="buttonClasses">

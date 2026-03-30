@@ -14,7 +14,6 @@ const { data: courses, pending, error, refresh } = await useFetch<CourseWithSign
 })
 
 const rejectingId = ref<string | null>(null)
-const rejectReason = ref('')
 const actionError = ref<string | null>(null)
 
 const pendingReview = computed(() => courses.value?.filter(c => c.status === 'pending_review') ?? [])
@@ -27,28 +26,6 @@ async function approve(id: string) {
     await refresh()
   } catch (err: any) {
     actionError.value = err.data?.statusMessage || 'Failed to approve course'
-  }
-}
-
-function openReject(id: string) {
-  rejectingId.value = id
-  rejectReason.value = ''
-  actionError.value = null
-}
-
-async function confirmReject() {
-  if (!rejectingId.value) return
-  actionError.value = null
-  try {
-    await $fetch(`/api/admin/courses/${rejectingId.value}/reject`, {
-      method: 'POST',
-      body: { reason: rejectReason.value },
-    })
-    rejectingId.value = null
-    rejectReason.value = ''
-    await refresh()
-  } catch (err: any) {
-    actionError.value = err.data?.statusMessage || 'Failed to reject course'
   }
 }
 
@@ -118,7 +95,7 @@ const statusClass: Record<string, string> = {
                 </button>
                 <button
                   class="text-sm text-red-400 hover:text-red-300 transition-colors"
-                  @click="openReject(course.id)"
+                  @click="rejectingId = course.id"
                 >
                   Reject
                 </button>
@@ -165,7 +142,7 @@ const statusClass: Record<string, string> = {
               <template v-if="course.status === 'approved'" #actions>
                 <button
                   class="text-sm text-slate-400 hover:text-slate-300 transition-colors"
-                  @click="openReject(course.id)"
+                  @click="rejectingId = course.id"
                 >
                   Revoke
                 </button>
@@ -177,41 +154,10 @@ const statusClass: Record<string, string> = {
     </div>
 
     <!-- Reject modal -->
-    <div
-      v-if="rejectingId"
-      class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4"
-      @click.self="rejectingId = null"
-    >
-      <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md">
-        <h3 class="text-lg font-semibold text-white mb-4">
-          Reject course
-        </h3>
-        <UiTextarea
-          v-model="rejectReason"
-          placeholder="Explain why this course is being rejected..."
-          class="mb-4"
-          :rows="4"
-        />
-        <p v-if="actionError" class="text-sm text-red-400 mb-3">
-          {{ actionError }}
-        </p>
-        <div class="flex gap-3 justify-end">
-          <UiButton
-            variant="secondary"
-            :block="false"
-            @click="rejectingId = null"
-          >
-            Cancel
-          </UiButton>
-          <button
-            class="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors bg-red-600 text-white hover:bg-red-500 disabled:opacity-60 disabled:cursor-not-allowed"
-            :disabled="!rejectReason.trim()"
-            @click="confirmReject"
-          >
-            Reject
-          </button>
-        </div>
-      </div>
-    </div>
+    <AdminRejectModal
+      :course-id="rejectingId"
+      @close="rejectingId = null"
+      @rejected="refresh"
+    />
   </div>
 </template>
