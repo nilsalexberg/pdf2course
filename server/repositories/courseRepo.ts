@@ -468,6 +468,30 @@ export async function updateCourseStatus(
   return course as Course
 }
 
+export async function listPublicCourses(
+  client: SupabaseClient,
+  opts: { search?: string; limit: number; offset: number },
+): Promise<{ courses: Course[]; total: number }> {
+  let query = client
+    .from('courses')
+    .select('*', { count: 'exact' })
+    .eq('status', 'approved')
+    .order('created_at', { ascending: false })
+    .range(opts.offset, opts.offset + opts.limit - 1)
+
+  if (opts.search) {
+    query = query.ilike('title', `%${opts.search}%`)
+  }
+
+  const { data, error, count } = await query
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  return { courses: (data ?? []) as Course[], total: count ?? 0 }
+}
+
 export async function deleteLessonCompletionsByCourseId(client: SupabaseClient, courseId: string): Promise<void> {
   const { error } = await client.from('lesson_completions').delete().eq('course_id', courseId)
   if (error) {

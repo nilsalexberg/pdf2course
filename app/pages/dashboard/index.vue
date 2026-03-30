@@ -112,13 +112,7 @@ const statusClass: Record<string, string> = {
       </div>
 
       <div class="mb-8">
-        <h2 class="text-xl font-semibold text-white mb-6">
-          Public courses
-        </h2>
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-12 text-center text-slate-400">
-          <p>No public courses available for now.</p>
-          <p class="text-sm mt-2">Courses pending admin approval will appear here once approved.</p>
-        </div>
+        <CoursesPublicCourseList />
       </div>
     </div>
   </div>
