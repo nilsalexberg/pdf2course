@@ -68,7 +68,16 @@ const isAdmin = computed(() => profile.value?.role === 'admin')
           :block="false"
           class="flex items-center gap-2"
         >
-          <div class="h-6 w-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400 border border-slate-700">
+          <img
+            v-if="profile?.avatar_url"
+            :src="profile.avatar_url"
+            alt="avatar"
+            class="h-6 w-6 rounded-full object-cover border border-slate-700"
+          >
+          <div
+            v-else
+            class="h-6 w-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400 border border-slate-700"
+          >
             {{ profile?.full_name?.charAt(0) || 'U' }}
           </div>
           <span class="hidden sm:inline">My Account</span>
