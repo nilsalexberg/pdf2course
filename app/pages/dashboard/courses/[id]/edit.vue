@@ -18,7 +18,7 @@ watch(course, (c) => {
   ])
 }, { immediate: true })
 
-const { title, description, numModules, lessonsPerModule, languageLevel, focus, language, tone, loading, errorMessage, onCoverChange, fillForm, buildFormData } = useCourseForm()
+const { title, description, numModules, lessonsPerModule, languageLevel, focus, language, tone, chunkSize, chunkOverlap, loading, errorMessage, onCoverChange, fillForm, buildFormData } = useCourseForm()
 
 // ─── SSE: auto-update status during generation ────────────────────────────────
 watch(
@@ -134,6 +134,8 @@ async function handleSubmit() {
                 v-model:focus="focus"
                 v-model:language="language"
                 v-model:tone="tone"
+                v-model:chunk-size="chunkSize"
+                v-model:chunk-overlap="chunkOverlap"
               />
 
               <UiButton type="submit" :loading="loading">

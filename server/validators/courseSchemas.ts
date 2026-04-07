@@ -1,5 +1,12 @@
 import { z } from 'zod'
-import { COURSE_LANGUAGE_LEVELS, COURSE_FOCUS_OPTIONS, COURSE_LANGUAGES, COURSE_TONES } from '../../types/courseConfig'
+import {
+  COURSE_LANGUAGE_LEVELS,
+  COURSE_FOCUS_OPTIONS,
+  COURSE_LANGUAGES,
+  COURSE_TONES,
+  CHUNK_SIZE_LIMITS,
+  CHUNK_OVERLAP_LIMITS,
+} from '../../types/courseConfig'
 
 export const CourseCreateLimits = {
   numModules: { min: 1, max: 50 },
@@ -35,6 +42,18 @@ export const courseCreateSchema = z.object({
   focus: z.enum(COURSE_FOCUS_OPTIONS as unknown as [string, ...string[]]),
   language: z.enum(COURSE_LANGUAGES as unknown as [string, ...string[]]),
   tone: z.enum(COURSE_TONES as unknown as [string, ...string[]]),
+  chunk_size: z.coerce
+    .number()
+    .int()
+    .min(CHUNK_SIZE_LIMITS.min)
+    .max(CHUNK_SIZE_LIMITS.max)
+    .optional(),
+  chunk_overlap: z.coerce
+    .number()
+    .int()
+    .min(CHUNK_OVERLAP_LIMITS.min)
+    .max(CHUNK_OVERLAP_LIMITS.max)
+    .optional(),
 })
 
 export type CourseCreateInput = z.infer<typeof courseCreateSchema>

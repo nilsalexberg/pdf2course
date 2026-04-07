@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CourseWithSignedCover, ModuleWithLessons } from '@@/types/course'
-import { COURSE_LANGUAGE_LEVELS, COURSE_FOCUS_OPTIONS, COURSE_LANGUAGES, COURSE_TONES } from '@@/types/courseConfig'
+import { COURSE_LANGUAGE_LEVELS, COURSE_FOCUS_OPTIONS, COURSE_LANGUAGES, COURSE_TONES, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP } from '@@/types/courseConfig'
 
 definePageMeta({ middleware: ['auth', 'role'] })
 useHead({ title: 'Course Detail · Admin · pdf2course' })
@@ -60,6 +60,8 @@ const settingsLanguageLevel = computed(() => course.value?.config?.language_leve
 const settingsFocus = computed(() => course.value?.config?.focus ?? COURSE_FOCUS_OPTIONS[0])
 const settingsLanguage = computed(() => course.value?.config?.language ?? COURSE_LANGUAGES[0])
 const settingsTone = computed(() => course.value?.config?.tone ?? COURSE_TONES[0])
+const settingsChunkSize = computed(() => course.value?.config?.chunk_size ?? DEFAULT_CHUNK_SIZE)
+const settingsChunkOverlap = computed(() => course.value?.config?.chunk_overlap ?? DEFAULT_CHUNK_OVERLAP)
 
 const statusClass: Record<string, string> = {
   draft: 'bg-slate-700 text-slate-300',
@@ -167,6 +169,8 @@ const statusClass: Record<string, string> = {
               :focus="settingsFocus"
               :language="settingsLanguage"
               :tone="settingsTone"
+              :chunk-size="settingsChunkSize"
+              :chunk-overlap="settingsChunkOverlap"
             />
           </div>
         </section>

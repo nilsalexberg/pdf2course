@@ -1,4 +1,4 @@
-import { COURSE_LANGUAGE_LEVELS, COURSE_FOCUS_OPTIONS, COURSE_LANGUAGES, COURSE_TONES } from '@@/types/courseConfig'
+import { COURSE_LANGUAGE_LEVELS, COURSE_FOCUS_OPTIONS, COURSE_LANGUAGES, COURSE_TONES, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP } from '@@/types/courseConfig'
 import type { CourseWithSignedCover } from '@@/types/course'
 
 const COVER_MAX_SIZE = 5 * 1024 * 1024 // 5MB
@@ -12,6 +12,8 @@ export function useCourseForm() {
   const focus = ref<string>(COURSE_FOCUS_OPTIONS[0])
   const language = ref<string>(COURSE_LANGUAGES[0])
   const tone = ref<string>(COURSE_TONES[0])
+  const chunkSize = ref<number>(DEFAULT_CHUNK_SIZE)
+  const chunkOverlap = ref<number>(DEFAULT_CHUNK_OVERLAP)
   const coverFile = ref<File | null>(null)
   const loading = ref(false)
   const errorMessage = ref<string | null>(null)
@@ -48,6 +50,8 @@ export function useCourseForm() {
     focus.value = course.config?.focus ?? COURSE_FOCUS_OPTIONS[0]
     language.value = course.config?.language ?? COURSE_LANGUAGES[0]
     tone.value = course.config?.tone ?? COURSE_TONES[0]
+    chunkSize.value = course.config?.chunk_size ?? DEFAULT_CHUNK_SIZE
+    chunkOverlap.value = course.config?.chunk_overlap ?? DEFAULT_CHUNK_OVERLAP
   }
 
   function buildFormData(extra?: (fd: FormData) => void): FormData {
@@ -60,6 +64,8 @@ export function useCourseForm() {
     fd.set('focus', focus.value)
     fd.set('language', language.value)
     fd.set('tone', tone.value)
+    if (chunkSize.value != null) fd.set('chunk_size', String(chunkSize.value))
+    if (chunkOverlap.value != null) fd.set('chunk_overlap', String(chunkOverlap.value))
     if (coverFile.value) fd.set('cover', coverFile.value)
     extra?.(fd)
     return fd
@@ -68,6 +74,7 @@ export function useCourseForm() {
   return {
     title, description, numModules, lessonsPerModule,
     languageLevel, focus, language, tone,
+    chunkSize, chunkOverlap,
     coverFile, loading, errorMessage,
     onCoverChange, fillForm, buildFormData,
   }

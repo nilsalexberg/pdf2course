@@ -13,6 +13,8 @@ export interface CourseConfig {
   focus?: CourseFocus
   language?: CourseLanguage
   tone?: CourseTone
+  chunk_size?: number
+  chunk_overlap?: number
 }
 
 export interface Course {

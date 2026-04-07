@@ -45,7 +45,7 @@ export async function processCourseGeneration(courseId: string, adminClient: Sup
 
     // ─── STEP 3 — Chunk documents ──────────────────────────────────────────
     const freshPdfs = await listCoursePdfs(adminClient, courseId)
-    await chunkDocuments(adminClient, courseId, freshPdfs)
+    await chunkDocuments(adminClient, courseId, freshPdfs, course)
 
     // ─── STEP 4 — Generate embeddings ─────────────────────────────────────
     const chunks = await listDocumentChunksByCourseId(adminClient, courseId)
@@ -113,7 +113,9 @@ async function extractTextFromPdfs(adminClient: SupabaseClient, courseId: string
  * Idempotent: deletes existing chunks for each PDF before re-inserting.
  * Wrapped in a try/catch per PDF so failures are clearly attributed for worker retries.
  */
-async function chunkDocuments(adminClient: SupabaseClient, courseId: string, pdfs: any[]) {
+async function chunkDocuments(adminClient: SupabaseClient, courseId: string, pdfs: any[], course: Course) {
+  const chunkSize = course.config?.chunk_size
+  const chunkOverlap = course.config?.chunk_overlap
   // Fetch all existing chunks for the course to check which PDFs are already fully processed
   const existingChunks = await listDocumentChunksByCourseId(adminClient, courseId)
 
@@ -137,7 +139,7 @@ async function chunkDocuments(adminClient: SupabaseClient, courseId: string, pdf
       // We delete existing chunks (if any) to ensure a clean state before re-inserting.
       await deleteDocumentChunksByPdfId(adminClient, pdf.id)
 
-      const chunks = splitIntoChunks(pdf.extracted_text)
+      const chunks = splitIntoChunks(pdf.extracted_text, chunkSize, chunkOverlap)
       const rows = chunks.map((content, chunk_index) => ({
         course_id: courseId,
         course_pdf_id: pdf.id,

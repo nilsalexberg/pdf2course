@@ -1,27 +1,27 @@
-// Target character count per chunk (~300 tokens at ~4 chars/token)
-export const TARGET_CHUNK_SIZE = 1200
-// Characters from the end of each chunk carried into the start of the next
-export const CHUNK_OVERLAP = 200
-// Hard cap per sentence to guard against malformed PDFs with no punctuation
-export const MAX_SENTENCE_SIZE = TARGET_CHUNK_SIZE
+import { DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP } from '../../types/courseConfig'
 
 /**
- * Returns the trailing ~CHUNK_OVERLAP characters of a chunk, starting at a word
+ * Returns the trailing ~chunkOverlap characters of a chunk, starting at a word
  * boundary so the overlap never begins mid-word.
  */
-export function getOverlapSuffix(text: string): string {
-  if (text.length <= CHUNK_OVERLAP) return text
-  const tail = text.slice(-CHUNK_OVERLAP)
+export function getOverlapSuffix(text: string, chunkOverlap: number = DEFAULT_CHUNK_OVERLAP): string {
+  if (chunkOverlap <= 0) return ''
+  if (text.length <= chunkOverlap) return text
+  const tail = text.slice(text.length - chunkOverlap)
   const firstSpace = tail.indexOf(' ')
   return firstSpace === -1 ? tail : tail.slice(firstSpace + 1)
 }
 
 /**
  * Splits text into chunks with overlap, preferring paragraph breaks over sentence
- * breaks. Giant sentences from malformed PDFs are hard-capped at MAX_SENTENCE_SIZE
+ * breaks. Giant sentences from malformed PDFs are hard-capped at chunkSize
  * to prevent oversized payloads reaching the vector DB.
  */
-export function splitIntoChunks(text: string): string[] {
+export function splitIntoChunks(
+  text: string,
+  chunkSize: number = DEFAULT_CHUNK_SIZE,
+  chunkOverlap: number = DEFAULT_CHUNK_OVERLAP,
+): string[] {
   const paragraphs = text.split(/\n\n+/)
   const chunks: string[] = []
   let current = ''
@@ -31,7 +31,7 @@ export function splitIntoChunks(text: string): string[] {
     const trimmed = current.trim()
     if (!trimmed) return
     chunks.push(trimmed)
-    current = getOverlapSuffix(trimmed)
+    current = getOverlapSuffix(trimmed, chunkOverlap)
   }
 
   for (const para of paragraphs) {
@@ -39,21 +39,21 @@ export function splitIntoChunks(text: string): string[] {
     if (!trimmed) continue
 
     // Paragraph too large on its own — split by sentence
-    if (trimmed.length > TARGET_CHUNK_SIZE) {
+    if (trimmed.length > chunkSize) {
       if (current) pushChunk()
 
       const sentences = trimmed
         .split(/(?<=[.!?])\s+/)
         // Hard-cap sentences that lack punctuation (e.g. tables/headers run together)
         .flatMap((s) => {
-          if (s.length <= MAX_SENTENCE_SIZE) return [s]
-          // Slice at word boundary every MAX_SENTENCE_SIZE chars
+          if (s.length <= chunkSize) return [s]
+          // Slice at word boundary every chunkSize chars
           const parts: string[] = []
           let remaining = s
-          while (remaining.length > MAX_SENTENCE_SIZE) {
-            const slice = remaining.slice(0, MAX_SENTENCE_SIZE)
+          while (remaining.length > chunkSize) {
+            const slice = remaining.slice(0, chunkSize)
             const lastSpace = slice.lastIndexOf(' ')
-            const cutAt = lastSpace > 0 ? lastSpace : MAX_SENTENCE_SIZE
+            const cutAt = lastSpace > 0 ? lastSpace : chunkSize
             parts.push(remaining.slice(0, cutAt).trim())
             remaining = remaining.slice(cutAt).trim()
           }
@@ -63,7 +63,7 @@ export function splitIntoChunks(text: string): string[] {
 
       for (const sentence of sentences) {
         if (!sentence) continue
-        if (current && current.length + 1 + sentence.length > TARGET_CHUNK_SIZE) {
+        if (current && current.length + 1 + sentence.length > chunkSize) {
           pushChunk()
         }
         current = current ? `${current} ${sentence}` : sentence
@@ -72,12 +72,10 @@ export function splitIntoChunks(text: string): string[] {
     }
 
     // Would appending this paragraph exceed the target?
-    if (current && current.length + 2 + trimmed.length > TARGET_CHUNK_SIZE) {
+    if (current && current.length + 2 + trimmed.length > chunkSize) {
       pushChunk()
-      current = current ? `${current}\n\n${trimmed}` : trimmed
-    } else {
-      current = current ? `${current}\n\n${trimmed}` : trimmed
     }
+    current = current ? `${current}\n\n${trimmed}` : trimmed
   }
 
   if (current.trim()) {
