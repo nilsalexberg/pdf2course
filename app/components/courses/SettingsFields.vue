@@ -20,8 +20,6 @@ const language = defineModel<string>('language', { required: true })
 const tone = defineModel<string>('tone', { required: true })
 const chunkSize = defineModel<number>('chunkSize', { default: DEFAULT_CHUNK_SIZE })
 const chunkOverlap = defineModel<number>('chunkOverlap', { default: DEFAULT_CHUNK_OVERLAP })
-
-const showAdvanced = ref(false)
 </script>
 
 <template>
@@ -105,58 +103,45 @@ const showAdvanced = ref(false)
     </div>
 
     <div class="mt-4 pt-4 border-t border-slate-700">
-      <button
-        type="button"
-        class="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
-        @click="showAdvanced = !showAdvanced"
-      >
-        <svg
-          class="w-4 h-4 transition-transform"
-          :class="{ 'rotate-90': showAdvanced }"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
-        Advanced settings
-      </button>
+      <UiCollapsible label="Advanced settings">
+        <div class="space-y-4">
+          <UiAlert type="info">
+            <p class="space-y-1.5 text-xs">
+              <span class="block">
+                <span class="text-blue-200 font-medium">Chunk size</span> controls how many characters each text segment contains before being sent for AI processing.
+                Increase it for dense, technical documents where more context per chunk improves understanding.
+                Decrease it for shorter, self-contained paragraphs or when you want more granular retrieval.
+              </span>
+              <span class="block">
+                <span class="text-blue-200 font-medium">Chunk overlap</span> is the number of characters shared between consecutive chunks to preserve context across boundaries.
+                Increase it if key ideas tend to span paragraph breaks.
+                Decrease it (or set to 0) to reduce redundancy and lower processing cost.
+              </span>
+            </p>
+          </UiAlert>
 
-      <div v-if="showAdvanced" class="mt-4 space-y-4">
-        <div class="p-3 rounded-lg bg-slate-800/50 border border-slate-700 text-xs text-slate-400 space-y-1.5">
-          <p>
-            <span class="text-slate-300 font-medium">Chunk size</span> controls how many characters each text segment contains before being sent for AI processing.
-            Increase it for dense, technical documents where more context per chunk improves understanding.
-            Decrease it for shorter, self-contained paragraphs or when you want more granular retrieval.
-          </p>
-          <p>
-            <span class="text-slate-300 font-medium">Chunk overlap</span> is the number of characters shared between consecutive chunks to preserve context across boundaries.
-            Increase it if key ideas tend to span paragraph breaks.
-            Decrease it (or set to 0) to reduce redundancy and lower processing cost.
-          </p>
+          <div class="grid grid-cols-2 gap-4">
+            <UiInput
+              id="chunk_size"
+              v-model.number="chunkSize"
+              type="number"
+              label="Chunk size (chars)"
+              :min="CHUNK_SIZE_LIMITS.min"
+              :max="CHUNK_SIZE_LIMITS.max"
+              :placeholder="String(DEFAULT_CHUNK_SIZE)"
+            />
+            <UiInput
+              id="chunk_overlap"
+              v-model.number="chunkOverlap"
+              type="number"
+              label="Chunk overlap (chars)"
+              :min="CHUNK_OVERLAP_LIMITS.min"
+              :max="CHUNK_OVERLAP_LIMITS.max"
+              :placeholder="String(DEFAULT_CHUNK_OVERLAP)"
+            />
+          </div>
         </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <UiInput
-            id="chunk_size"
-            v-model.number="chunkSize"
-            type="number"
-            label="Chunk size (chars)"
-            :min="CHUNK_SIZE_LIMITS.min"
-            :max="CHUNK_SIZE_LIMITS.max"
-            :placeholder="String(DEFAULT_CHUNK_SIZE)"
-          />
-          <UiInput
-            id="chunk_overlap"
-            v-model.number="chunkOverlap"
-            type="number"
-            label="Chunk overlap (chars)"
-            :min="CHUNK_OVERLAP_LIMITS.min"
-            :max="CHUNK_OVERLAP_LIMITS.max"
-            :placeholder="String(DEFAULT_CHUNK_OVERLAP)"
-          />
-        </div>
-      </div>
+      </UiCollapsible>
     </div>
   </div>
 </template>
