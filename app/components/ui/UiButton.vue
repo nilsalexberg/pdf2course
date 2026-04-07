@@ -5,6 +5,7 @@ const props = withDefaults(defineProps<{
   loading?: boolean
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost'
   to?: string
+  size?: 'sm' | 'xs'
   block?: boolean
 }>(), {
   type: 'button',
@@ -12,14 +13,16 @@ const props = withDefaults(defineProps<{
   loading: false,
   variant: 'primary',
   to: undefined,
+  size: 'sm',
   block: true,
 })
 
 const buttonClasses = computed(() => [
-  'inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed',
+  'inline-flex items-center justify-center rounded-lg font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed overflow-hidden shrink-0',
+  props.size === 'sm' ? 'px-4 py-2 text-sm font-semibold' : 'px-3 py-1.5 text-xs',
   props.block ? 'w-full' : '',
-  props.variant === 'primary' ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400' : '',
-  props.variant === 'secondary' ? 'border border-slate-700 text-slate-100 hover:bg-slate-800/80' : '',
+  props.variant === 'primary' ? 'bg-emerald-600 text-white hover:bg-emerald-500' : '',
+  props.variant === 'secondary' ? 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-600 hover:text-white' : '',
   props.variant === 'danger' ? 'bg-red-600/90 text-white hover:bg-red-500' : '',
   props.variant === 'ghost' ? 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/40' : ''
 ])

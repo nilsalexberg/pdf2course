@@ -10,6 +10,46 @@ const props = defineProps<{
 const localModules = ref<ModuleWithLessons[]>(props.modules ?? [])
 watch(() => props.modules, (val) => { localModules.value = val ?? [] }, { immediate: true })
 
+// ─── Lesson content modal ─────────────────────────────────────────────────────
+
+const contentModalLesson = ref<Lesson | null>(null)
+const contentModalReadonly = ref(false)
+
+function openContentView(lesson: Lesson) {
+  contentModalLesson.value = lesson
+  contentModalReadonly.value = true
+}
+
+function openContentEdit(lesson: Lesson) {
+  contentModalLesson.value = lesson
+  contentModalReadonly.value = false
+}
+
+function closeContentModal() {
+  contentModalLesson.value = null
+}
+
+function onContentUpdated(updated: Lesson) {
+  for (const mod of localModules.value) {
+    const idx = mod.lessons.findIndex(l => l.id === updated.id)
+    if (idx !== -1) {
+      mod.lessons[idx] = updated
+      break
+    }
+  }
+  contentModalLesson.value = updated
+}
+
+function onLessonGenerated(updated: Lesson) {
+  for (const mod of localModules.value) {
+    const idx = mod.lessons.findIndex(l => l.id === updated.id)
+    if (idx !== -1) {
+      mod.lessons[idx] = updated
+      break
+    }
+  }
+}
+
 // ─── Expand/collapse ──────────────────────────────────────────────────────────
 
 const expandedModules = ref<Set<string>>(new Set())
@@ -192,46 +232,97 @@ async function saveLesson(lesson: Lesson) {
           </div>
 
           <!-- View mode -->
-          <div v-else class="flex items-start justify-between gap-4">
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="text-xs text-slate-500">Lesson {{ lesson.lesson_number }}</span>
-              </div>
-              <p class="text-sm font-medium text-white">{{ lesson.title }}</p>
-              <p class="text-xs text-slate-400 mt-0.5">{{ lesson.description }}</p>
-              <div v-if="lesson.learning_objectives.length" class="mt-2 space-y-1">
-                <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Objectives</p>
-                <ul class="space-y-0.5">
-                  <li
-                    v-for="(obj, i) in lesson.learning_objectives"
-                    :key="i"
-                    class="text-xs text-slate-400 flex gap-1.5"
+          <div v-else class="space-y-3">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-xs text-slate-500">Lesson {{ lesson.lesson_number }}</span>
+                  <span
+                    class="text-xs rounded-full px-2 py-0.5 font-medium"
+                    :class="{
+                      'bg-emerald-900/40 text-emerald-400': lesson.status === 'ready',
+                      'bg-amber-900/40 text-amber-400': lesson.status === 'generating',
+                      'bg-red-900/40 text-red-400': lesson.status === 'failed',
+                      'bg-slate-800 text-slate-500': lesson.status === 'not_generated',
+                    }"
                   >
-                    <span class="text-emerald-500 shrink-0">·</span>
-                    <span>{{ obj }}</span>
-                  </li>
-                </ul>
+                    {{ lesson.status === 'not_generated' ? 'No content' : lesson.status === 'ready' ? 'Content ready' : lesson.status }}
+                  </span>
+                </div>
+                <p class="text-sm font-medium text-white">{{ lesson.title }}</p>
+                <p class="text-xs text-slate-400 mt-0.5">{{ lesson.description }}</p>
+                <div v-if="lesson.learning_objectives.length" class="mt-2 space-y-1">
+                  <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Objectives</p>
+                  <ul class="space-y-0.5">
+                    <li
+                      v-for="(obj, i) in lesson.learning_objectives"
+                      :key="i"
+                      class="text-xs text-slate-400 flex gap-1.5"
+                    >
+                      <span class="text-emerald-500 shrink-0">·</span>
+                      <span>{{ obj }}</span>
+                    </li>
+                  </ul>
+                </div>
+                <div v-if="lesson.key_topics.length" class="mt-2 flex flex-wrap gap-1.5">
+                  <span
+                    v-for="(topic, i) in lesson.key_topics"
+                    :key="i"
+                    class="text-xs bg-slate-800 text-slate-300 rounded px-2 py-0.5"
+                  >
+                    {{ topic }}
+                  </span>
+                </div>
+                <p v-if="lesson.status === 'failed' && lesson.generation_error" class="text-xs text-red-400 mt-1">
+                  Error: {{ lesson.generation_error }}
+                </p>
               </div>
-              <div v-if="lesson.key_topics.length" class="mt-2 flex flex-wrap gap-1.5">
-                <span
-                  v-for="(topic, i) in lesson.key_topics"
-                  :key="i"
-                  class="text-xs bg-slate-800 text-slate-300 rounded px-2 py-0.5"
-                >
-                  {{ topic }}
-                </span>
-              </div>
+              <button
+                v-if="!readonly"
+                class="text-xs text-slate-400 hover:text-slate-200 transition-colors px-2 py-1 rounded hover:bg-slate-700/50 shrink-0"
+                @click="startEditLesson(lesson)"
+              >
+                Edit
+              </button>
             </div>
-            <button
-              v-if="!readonly"
-              class="text-xs text-slate-400 hover:text-slate-200 transition-colors px-2 py-1 rounded hover:bg-slate-700/50 shrink-0"
-              @click="startEditLesson(lesson)"
-            >
-              Edit
-            </button>
+
+            <!-- Content actions -->
+            <div class="flex flex-wrap gap-2">
+              <!-- Generate / retry (owner only) -->
+              <CoursesLessonGenerateButton
+                v-if="!readonly && lesson.status !== 'ready'"
+                :lesson="lesson"
+                @update:lesson="onLessonGenerated"
+              />
+
+              <!-- View content (everyone) -->
+              <UiButton
+                v-if="lesson.status === 'ready' && lesson.content"
+                variant="secondary"
+                size="xs"
+                :block="false"
+                class="gap-1.5"
+                @click="readonly ? openContentView(lesson) : openContentEdit(lesson)"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                {{ readonly ? 'View Content' : 'View / Edit Content' }}
+              </UiButton>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Lesson content modal -->
+  <CoursesLessonContentModal
+    v-if="contentModalLesson"
+    :lesson="contentModalLesson"
+    :readonly="contentModalReadonly"
+    @close="closeContentModal"
+    @update:lesson="onContentUpdated"
+  />
 </template>

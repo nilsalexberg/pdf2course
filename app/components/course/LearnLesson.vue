@@ -17,31 +17,7 @@ const emit = defineEmits<{
 
 const router = useRouter()
 
-const isGenerating = ref(false)
-const isInProgress = computed(() => isGenerating.value || props.lesson.status === 'generating')
-
-async function generateContent() {
-  if (isInProgress.value) return
-  isGenerating.value = true
-
-  try {
-    const updated = await $fetch<Lesson>(
-      `/api/courses/${props.lesson.course_id}/lessons/${props.lesson.id}/generate`,
-      { method: 'POST' },
-    )
-    emit('update:lesson', updated)
-  }
-  catch (err: any) {
-    emit('update:lesson', {
-      ...props.lesson,
-      status: 'failed',
-      generation_error: err?.data?.statusMessage ?? err?.message ?? 'Unknown error',
-    })
-  }
-  finally {
-    isGenerating.value = false
-  }
-}
+const isInProgress = computed(() => props.lesson.status === 'generating')
 
 function studyLesson() {
   router.push(`/dashboard/courses/${props.lesson.course_id}/lessons/${props.lesson.id}`)
@@ -147,9 +123,11 @@ function studyLesson() {
 
       <!-- Action buttons -->
       <div class="pt-1">
-        <button
+        <UiButton
           v-if="lesson.status === 'ready' && !props.isLocked"
-          class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition-colors"
+          variant="primary"
+          :block="false"
+          class="gap-2"
           @click="studyLesson"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -157,41 +135,26 @@ function studyLesson() {
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           {{ props.isCompleted ? 'Review Lesson' : 'Study Lesson' }}
-        </button>
+        </UiButton>
 
-        <button
+        <UiButton
           v-else-if="lesson.status === 'ready' && props.isLocked"
           disabled
-          class="inline-flex items-center gap-2 rounded-lg bg-slate-800 border border-slate-700 px-4 py-2 text-sm font-medium text-slate-500 cursor-not-allowed"
+          variant="secondary"
+          :block="false"
+          class="gap-2"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
           Locked
-        </button>
+        </UiButton>
 
-        <button
-          v-else-if="isInProgress"
-          disabled
-          class="inline-flex items-center gap-2 rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed"
-        >
-          <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          Generating content…
-        </button>
-
-        <button
+        <CoursesLessonGenerateButton
           v-else
-          class="inline-flex items-center gap-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
-          @click="generateContent"
-        >
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          {{ lesson.status === 'failed' ? 'Retry Generation' : 'Generate Content' }}
-        </button>
+          :lesson="lesson"
+          @update:lesson="$emit('update:lesson', $event)"
+        />
       </div>
     </div>
   </div>
