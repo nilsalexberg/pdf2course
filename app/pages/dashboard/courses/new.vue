@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Course } from '@@/types/course'
+
 definePageMeta({ middleware: ['auth', 'role'] })
 useHead({ title: 'New Course · pdf2course' })
 
@@ -9,7 +11,7 @@ setBreadcrumbs([
 ])
 
 const router = useRouter()
-const { title, description, numModules, lessonsPerModule, languageLevel, focus, language, tone, loading, errorMessage, onCoverChange, buildFormData } = useCourseForm()
+const { title, description, loading, errorMessage, onCoverChange, buildFormData } = useCourseForm()
 
 const pdfFiles = ref<File[]>([])
 
@@ -52,22 +54,14 @@ async function handleSubmit() {
     errorMessage.value = 'Title is required.'
     return
   }
-  if (numModules.value < 1 || numModules.value > 50) {
-    errorMessage.value = 'Number of modules must be between 1 and 50.'
-    return
-  }
-  if (lessonsPerModule.value < 1 || lessonsPerModule.value > 20) {
-    errorMessage.value = 'Lessons per module must be between 1 and 20.'
-    return
-  }
 
   loading.value = true
   try {
     const formData = buildFormData((fd) => {
       for (const pdf of pdfFiles.value) fd.append('pdfs', pdf)
     })
-    await $fetch('/api/courses', { method: 'POST', body: formData })
-    await router.replace('/dashboard')
+    const course = await $fetch<Course>('/api/courses', { method: 'POST', body: formData })
+    await router.replace(`/dashboard/courses/${course.id}/edit`)
   } catch (err: any) {
     errorMessage.value = err?.data?.message ?? err?.message ?? err?.statusMessage ?? 'Failed to create course.'
   } finally {
@@ -89,12 +83,6 @@ async function handleSubmit() {
           <CoursesFormFields
             v-model:title="title"
             v-model:description="description"
-            v-model:num-modules="numModules"
-            v-model:lessons-per-module="lessonsPerModule"
-            v-model:language-level="languageLevel"
-            v-model:focus="focus"
-            v-model:language="language"
-            v-model:tone="tone"
             @cover-change="onCoverChange"
           />
 

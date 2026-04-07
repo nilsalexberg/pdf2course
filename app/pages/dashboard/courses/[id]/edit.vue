@@ -51,7 +51,8 @@ const stagedPdfs = ref<File[]>([])
 const activeTab = ref('edit')
 
 const tabs = [
-  { key: 'edit', label: 'Settings' },
+  { key: 'edit', label: 'Details' },
+  { key: 'generation', label: 'Generation' },
   { key: 'publish', label: 'Publication' },
 ]
 
@@ -96,18 +97,12 @@ async function handleSubmit() {
         </h1>
 
         <UiTabs v-model="activeTab" :tabs="tabs">
-          <!-- ─── Edit tab ─────────────────────────────────────────────────── -->
+          <!-- ─── Details tab ───────────────────────────────────────────────── -->
           <template #edit>
             <form class="space-y-4" @submit.prevent="handleSubmit">
               <CoursesFormFields
                 v-model:title="title"
                 v-model:description="description"
-                v-model:num-modules="numModules"
-                v-model:lessons-per-module="lessonsPerModule"
-                v-model:language-level="languageLevel"
-                v-model:focus="focus"
-                v-model:language="language"
-                v-model:tone="tone"
                 :cover-url-signed="course?.cover_url_signed"
                 @cover-change="onCoverChange"
               />
@@ -118,6 +113,28 @@ async function handleSubmit() {
                   @update:staged-pdfs="stagedPdfs = $event"
                 />
               </div>
+
+              <UiButton type="submit" :loading="loading">
+                {{ loading ? 'Saving…' : 'Save changes' }}
+              </UiButton>
+            </form>
+
+            <p v-if="errorMessage" class="mt-4 text-sm text-red-400">
+              {{ errorMessage }}
+            </p>
+          </template>
+
+          <!-- ─── Generation tab ───────────────────────────────────────────── -->
+          <template #generation>
+            <form class="space-y-4" @submit.prevent="handleSubmit">
+              <CoursesSettingsFields
+                v-model:num-modules="numModules"
+                v-model:lessons-per-module="lessonsPerModule"
+                v-model:language-level="languageLevel"
+                v-model:focus="focus"
+                v-model:language="language"
+                v-model:tone="tone"
+              />
 
               <UiButton type="submit" :loading="loading">
                 {{ loading ? 'Saving…' : 'Save changes' }}

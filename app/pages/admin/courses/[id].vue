@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CourseWithSignedCover, ModuleWithLessons } from '@@/types/course'
+import { COURSE_LANGUAGE_LEVELS, COURSE_FOCUS_OPTIONS, COURSE_LANGUAGES, COURSE_TONES } from '@@/types/courseConfig'
 
 definePageMeta({ middleware: ['auth', 'role'] })
 useHead({ title: 'Course Detail · Admin · pdf2course' })
@@ -52,6 +53,13 @@ async function confirmReject() {
     actionError.value = err.data?.statusMessage || 'Failed to reject course'
   }
 }
+
+const settingsNumModules = computed(() => course.value?.config?.num_modules ?? 5)
+const settingsLessonsPerModule = computed(() => course.value?.config?.lessons_per_module ?? 4)
+const settingsLanguageLevel = computed(() => course.value?.config?.language_level ?? COURSE_LANGUAGE_LEVELS[0])
+const settingsFocus = computed(() => course.value?.config?.focus ?? COURSE_FOCUS_OPTIONS[0])
+const settingsLanguage = computed(() => course.value?.config?.language ?? COURSE_LANGUAGES[0])
+const settingsTone = computed(() => course.value?.config?.tone ?? COURSE_TONES[0])
 
 const statusClass: Record<string, string> = {
   draft: 'bg-slate-700 text-slate-300',
@@ -142,6 +150,24 @@ const statusClass: Record<string, string> = {
           </h2>
           <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
             <CoursesSourcePdfs :course-id="id" readonly />
+          </div>
+        </section>
+
+        <!-- Generation settings -->
+        <section class="mb-6">
+          <h2 class="text-lg font-semibold text-slate-300 mb-3">
+            Generation settings
+          </h2>
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+            <CoursesSettingsFields
+              readonly
+              :num-modules="settingsNumModules"
+              :lessons-per-module="settingsLessonsPerModule"
+              :language-level="settingsLanguageLevel"
+              :focus="settingsFocus"
+              :language="settingsLanguage"
+              :tone="settingsTone"
+            />
           </div>
         </section>
 
