@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'blank' })
 useHead({ title: 'Login · pdf2course' })
 
 const client = useSupabaseClient()
@@ -92,14 +93,14 @@ async function handleGoogleLogin() {
           Log in
         </UiButton>
 
-        <UiButton
+        <!-- <UiButton
           type="button"
           variant="secondary"
           :loading="loading"
           @click="handleGoogleLogin"
         >
           Continue with Google
-        </UiButton>
+        </UiButton> -->
       </form>
 
       <p v-if="errorMessage" class="mt-4 text-sm text-red-400">

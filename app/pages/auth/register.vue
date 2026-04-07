@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'blank' })
 useHead({ title: 'Register · pdf2course' })
 
 const client = useSupabaseClient()

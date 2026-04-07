@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Exercise, Lesson, LessonStep } from '@@/types/course'
 
-definePageMeta({ middleware: ['auth', 'role'] })
+definePageMeta({ middleware: ['auth', 'role'], layout: 'blank' })
 
 const route = useRoute()
 const courseId = route.params.id as string
