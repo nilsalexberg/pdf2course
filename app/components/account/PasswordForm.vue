@@ -1,6 +1,7 @@
 <script setup lang="ts">
-const client = useSupabaseClient()
+const { $authClient } = useNuxtApp()
 
+const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 const saving = ref(false)
@@ -20,9 +21,14 @@ async function updatePassword() {
 
   saving.value = true
   try {
-    const { error } = await client.auth.updateUser({ password: newPassword.value })
+    const { error } = await $authClient.changePassword({
+      newPassword: newPassword.value,
+      currentPassword: currentPassword.value,
+      revokeOtherSessions: false,
+    })
     if (error) throw error
     alert.value = { type: 'success', message: 'Password updated successfully.' }
+    currentPassword.value = ''
     newPassword.value = ''
     confirmPassword.value = ''
   }
@@ -46,14 +52,22 @@ async function updatePassword() {
 
     <form class="space-y-5" @submit.prevent="updatePassword">
       <UiInput
-        id="new_password"
+        id="current_password"
+        v-model="currentPassword"
+        label="Current password"
+        type="password"
+        placeholder="Your current password"
+        required
+       />
+      <UiInput
+       id="new_password"
         v-model="newPassword"
         label="New password"
         type="password"
         placeholder="At least 8 characters"
         required
         minlength="8"
-      />
+       />
       <UiInput
         id="confirm_password"
         v-model="confirmPassword"

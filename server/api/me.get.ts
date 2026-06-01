@@ -1,19 +1,19 @@
-export default defineEventHandler(async (event) => {
-  const user = await serverSupabaseUser(event)
-  const client = await serverSupabaseClient(event)
+import { auth } from '../lib/auth'
+import { fromNodeHeaders } from 'better-auth/node'
+import { getProfileById } from '../repositories/profileRepo'
 
-  if (!user) {
+export default defineEventHandler(async (event) => {
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(event.node.req.headers) })
+  if (!session) {
     return {
       user: null,
-      profile: null,
+      profile: null
     }
   }
 
-  const { data: profile } = await client.from('profiles').select('*').eq('id', user.id).single()
-
+  const profile = await getProfileById(session.user.id)
   return {
-    user,
+    user: session.user,
     profile,
   }
 })
-

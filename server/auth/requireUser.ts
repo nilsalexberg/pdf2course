@@ -1,11 +1,13 @@
-import { createError } from 'h3'
-import { serverSupabaseUser } from '#supabase/server'
+import { createError, getHeaders } from 'h3'
+import { auth } from '../lib/auth'
+import { fromNodeHeaders } from 'better-auth/node'
 
 export async function requireUser(event: any) {
-  const user = await serverSupabaseUser(event)
-  if (!user) {
+  const session = await auth.api.getSession({
+    headers: fromNodeHeaders(event.node.req.headers),
+  })
+  if (!session) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
-  return user
+  return session.user
 }
-
