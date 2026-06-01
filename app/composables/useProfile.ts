@@ -1,21 +1,17 @@
 export function useProfile() {
-  const client = useSupabaseClient()
-  const user = useSupabaseUser()
-
+  const authUser = useState<any>('authUser', () => null)
   const profile = useState<any | null>('profile', () => null)
   const loading = useState<boolean>('profile-loading', () => false)
 
   async function fetchProfile() {
-    if (!user.value) {
+    if (!authUser.value) {
       profile.value = null
       return
     }
-
     loading.value = true
     try {
-      const { data, error } = await client.from('profiles').select('*').eq('id', user.value.id).single()
-      if (error) throw error
-      profile.value = data
+      const data = await $fetch<{ profile: any }>('/api/me')
+      profile.value = data?.profile ?? null
     } catch {
       profile.value = null
     } finally {
@@ -24,7 +20,7 @@ export function useProfile() {
   }
 
   watch(
-    user,
+    authUser,
     () => {
       fetchProfile()
     },

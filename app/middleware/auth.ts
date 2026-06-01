@@ -1,7 +1,7 @@
 export default defineNuxtRouteMiddleware((to) => {
-  const user = useSupabaseUser()
+  const authUser = useState<any>('authUser')
 
-  if (!user.value) {
+  if (!authUser.value) {
     const redirect = encodeURIComponent(to.fullPath)
     return navigateTo(`/auth/login?redirect=${redirect}`)
   }

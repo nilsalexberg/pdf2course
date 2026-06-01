@@ -1,8 +1,8 @@
 export default defineNuxtRouteMiddleware(async (to) => {
-  const user = useSupabaseUser()
+  const authUser = useState<any>('authUser')
   const { profile, refresh } = useProfile()
 
-  if (!user.value) return
+  if (!authUser.value) return
 
   // Ensure profile is loaded if it's currently null
   if (!profile.value) {
