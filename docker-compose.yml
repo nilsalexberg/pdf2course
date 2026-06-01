@@ -43,7 +43,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./supabase/init:/docker-entrypoint-initdb.d  # consolidated init SQL
     ports:
       - "5432:5432"
     healthcheck:

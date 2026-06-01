@@ -21,6 +21,7 @@ RUN chown node:node /app
 
 # Copy the built output from builder, setting ownership to non-root user
 COPY --from=builder --chown=node:node /app/.output ./.output
+COPY --from=builder --chown=node:node /app/drizzle ./drizzle
 
 # Run as non-root user for security (OWASP)
 USER node
