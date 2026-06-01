@@ -23,14 +23,14 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      # Nuxt runtimeConfig overrides (crucial to override at runtime with prefix NUXT_)
       NUXT_REDIS_URL: redis://redis:6379
-      NUXT_SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
-      NUXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL}
-      NUXT_PUBLIC_SUPABASE_KEY: ${SUPABASE_KEY}
-      NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY}
       NUXT_PUBLIC_SITE_URL: ${SITE_URL}
-      # Read via process.env.GEMINI_API_KEY directly at runtime
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/pdf2course
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${SITE_URL:-http://localhost:3000}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       NODE_ENV: production
 
