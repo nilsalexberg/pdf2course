@@ -1,0 +1,11 @@
+node_modules
+.output
+.nuxt
+.git
+*.md
+supabase/
+.env
+.env.*
+.gitignore
+.vscode/
+.idea/

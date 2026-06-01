@@ -1,0 +1,36 @@
+services:
+  redis:
+    image: redis:7-alpine
+    # Enable AOF persistence to prevent BullMQ queue state loss
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      # Nuxt runtimeConfig overrides (crucial to override at runtime with prefix NUXT_)
+      NUXT_REDIS_URL: redis://redis:6379
+      NUXT_SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      NUXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL}
+      NUXT_PUBLIC_SUPABASE_KEY: ${SUPABASE_KEY}
+      NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY}
+      NUXT_PUBLIC_SITE_URL: ${SITE_URL}
+      # Read via process.env.GEMINI_API_KEY directly at runtime
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      NODE_ENV: production
+
+volumes:
+  redis_data:
