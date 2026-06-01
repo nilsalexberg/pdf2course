@@ -2,17 +2,18 @@
 definePageMeta({ layout: 'blank' })
 useHead({ title: 'Register · pdf2course' })
 
-const client = useSupabaseClient()
-const user = useSupabaseUser()
+const { $authClient } = useNuxtApp()
+const authUser = useState<any>('authUser')
 const router = useRouter()
 
 const email = ref('')
 const password = ref('')
+const name = ref('')
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
 
 watch(
-  user,
+  authUser,
   (u: any) => {
     if (u) {
       router.replace('/dashboard')
@@ -25,13 +26,15 @@ async function handleRegister() {
   loading.value = true
   errorMessage.value = null
   try {
-    const { error } = await client.auth.signUp({
+    const { data, error } = await $authClient.signUp.email({
       email: email.value,
       password: password.value,
+      name: name.value
     })
     if (error) throw error
+    authUser.value = data?.user ?? null
   } catch (err: any) {
-    errorMessage.value = err.message ?? 'Error creating account.'
+    errorMessage.value = err?.message ?? 'Error creating account.'
   } finally {
     loading.value = false
   }
@@ -47,6 +50,14 @@ async function handleRegister() {
 
       <form class="space-y-4" @submit.prevent="handleRegister">
         <UiInput
+          id="name"
+          v-model="name"
+          type="text"
+          label="Name"
+          placeholder="Your name"
+        />
+
+        <UiInput
           id="email"
           v-model="email"
           type="email"
@@ -60,9 +71,9 @@ async function handleRegister() {
           v-model="password"
           type="password"
           label="Password"
-          placeholder="Minimum 6 characters"
+          placeholder="Minimum 8 characters"
           required
-          minlength="6"
+          minlength="8"
         />
 
         <UiButton

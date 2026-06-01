@@ -2,27 +2,35 @@
 definePageMeta({ layout: 'blank' })
 useHead({ title: 'Reset Password · pdf2course' })
 
-const client = useSupabaseClient()
+const { $authClient } = useNuxtApp()
 const router = useRouter()
+const route = useRoute()
 
 const password = ref('')
 const loading = ref(false)
 const message = ref<string | null>(null)
 const errorMessage = ref<string | null>(null)
 
+const token = computed(() => route.query.token as string | undefined)
+
 async function handleReset() {
+  if (!token.value) {
+    errorMessage.value = 'Invalid or missing reset token.'
+    return
+  }
   loading.value = true
   message.value = null
   errorMessage.value = null
   try {
-    const { error } = await client.auth.updateUser({
-      password: password.value,
+    const { error } = await $authClient.resetPassword({
+      newPassword: password.value,
+      token: token.value
     })
     if (error) throw error
     message.value = 'Password successfully changed. Redirecting to login...'
     setTimeout(() => router.replace('/auth/login'), 1500)
   } catch (err: any) {
-    errorMessage.value = err.message ?? 'Error resetting password.'
+    errorMessage.value = err?.message ?? 'Error resetting password.'
   } finally {
     loading.value = false
   }
@@ -42,9 +50,9 @@ async function handleReset() {
           v-model="password"
           type="password"
           label="New password"
-          placeholder="Minimum 6 characters"
+          placeholder="Minimum 8 characters"
           required
-          minlength="6"
+          minlength="8"
         />
 
         <UiButton

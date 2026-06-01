@@ -1,11 +1,11 @@
 <script setup lang="ts">
 useHead({ title: 'pdf2course' })
 
-const user = useSupabaseUser()
+const authUser = useState<any>('authUser')
 const { profile, refresh } = useProfile()
 
 watch(
-  user,
+  authUser,
   async (u: any) => {
     if (!u) return navigateTo('/auth/login')
 
@@ -14,7 +14,7 @@ watch(
     }
 
     const role = profile.value?.role
-    
+
     if (role === 'admin') {
       return navigateTo('/admin')
     }

@@ -2,8 +2,8 @@
 definePageMeta({ layout: 'blank' })
 useHead({ title: 'Login · pdf2course' })
 
-const client = useSupabaseClient()
-const user = useSupabaseUser()
+const { $authClient } = useNuxtApp()
+const authUser = useState<any>('authUser')
 const router = useRouter()
 
 const email = ref('')
@@ -12,10 +12,10 @@ const loading = ref(false)
 const errorMessage = ref<string | null>(null)
 
 const route = useRoute()
-const redirect = computed(() => (route.query.redirect as string | undefined) ?? '/')
+const redirect = computed(() => (route.query.redirect as string | undefined) ?? '/dashboard')
 
 watch(
-  user,
+  authUser,
   (u) => {
     if (u) {
       router.replace(redirect.value)
@@ -28,33 +28,15 @@ async function handleEmailLogin() {
   loading.value = true
   errorMessage.value = null
   try {
-    const { error } = await client.auth.signInWithPassword({
+    const { data, error } = await $authClient.signIn.email({
       email: email.value,
       password: password.value,
     })
     if (error) throw error
+    authUser.value = data?.user ?? null
   } catch (err: any) {
-    errorMessage.value = err.message ?? 'Error logging in.'
+    errorMessage.value = err?.message ?? 'Error logging in.'
   } finally {
-    loading.value = false
-  }
-}
-
-async function handleGoogleLogin() {
-  loading.value = true
-  errorMessage.value = null
-  try {
-    const config = useRuntimeConfig()
-    const siteUrl = (config.public as any)?.siteUrl as string | undefined
-
-    await client.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: siteUrl ? `${siteUrl}/auth/confirm` : undefined,
-      },
-    })
-  } catch (err: any) {
-    errorMessage.value = err.message ?? 'Error logging in with Google.'
     loading.value = false
   }
 }
@@ -93,14 +75,6 @@ async function handleGoogleLogin() {
           Log in
         </UiButton>
 
-        <!-- <UiButton
-          type="button"
-          variant="secondary"
-          :loading="loading"
-          @click="handleGoogleLogin"
-        >
-          Continue with Google
-        </UiButton> -->
       </form>
 
       <p v-if="errorMessage" class="mt-4 text-sm text-red-400">

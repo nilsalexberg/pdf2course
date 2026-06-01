@@ -3,7 +3,8 @@ definePageMeta({ middleware: ['auth'] })
 
 const { profile } = useProfile()
 const { setBreadcrumbs } = useBreadcrumbs()
-const client = useSupabaseClient()
+const { $authClient } = useNuxtApp()
+const authUser = useState<any>('authUser')
 const router = useRouter()
 
 setBreadcrumbs([{ label: 'My Account' }])
@@ -13,14 +14,14 @@ const loggingOut = ref(false)
 
 async function logout() {
   loggingOut.value = true
-  await client.auth.signOut()
+  await $authClient.signOut()
+  authUser.value = null
   router.push('/auth/login')
 }
 </script>
 
 <template>
   <div class="max-w-2xl mx-auto py-12 px-4 space-y-8">
-    <!-- Header -->
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-4">
         <img

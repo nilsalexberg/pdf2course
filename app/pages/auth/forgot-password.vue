@@ -2,7 +2,7 @@
 definePageMeta({ layout: 'blank' })
 useHead({ title: 'Forgot Password · pdf2course' })
 
-const client = useSupabaseClient()
+const { $authClient } = useNuxtApp()
 
 const email = ref('')
 const loading = ref(false)
@@ -14,16 +14,14 @@ async function handleForgot() {
   message.value = null
   errorMessage.value = null
   try {
-    const config = useRuntimeConfig()
-    const siteUrl = (config.public as any)?.siteUrl as string | undefined
-
-    const { error } = await client.auth.resetPasswordForEmail(email.value, {
-      redirectTo: siteUrl ? `${siteUrl}/auth/reset-password` : undefined,
+    const { error } = await $authClient.requestPasswordReset({
+      email: email.value,
+      redirectTo: '/auth/reset-password'
     })
     if (error) throw error
     message.value = 'If the email exists, we will send a reset link.'
   } catch (err: any) {
-    errorMessage.value = err.message ?? 'Error requesting password reset.'
+    errorMessage.value = err?.message ?? 'Error requesting password reset.'
   } finally {
     loading.value = false
   }
@@ -46,7 +44,7 @@ async function handleForgot() {
           placeholder="you@example.com"
           required
         />
-
+      
         <UiButton
           type="submit"
           :loading="loading"
