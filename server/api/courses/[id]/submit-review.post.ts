@@ -1,4 +1,3 @@
-import { serverSupabaseClient } from '#supabase/server'
 import type { Course } from '../../../../types/course'
 import { requireUser } from '../../../auth/requireUser'
 import { requireRole } from '../../../auth/requireRole'
@@ -6,13 +5,10 @@ import { getCourseById, updateCourseStatus } from '../../../repositories/courseR
 
 export default defineEventHandler(async (event): Promise<Course> => {
   const user = await requireUser(event)
-  const client = await serverSupabaseClient(event)
-
-  await requireRole(event, client, user.id)
+  await requireRole(event, user.id)
 
   const id = getRouterParam(event, 'id')!
-
-  const course = await getCourseById(client, id)
+  const course = await getCourseById(id)
 
   if (course.producer_id !== user.id) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
@@ -32,5 +28,5 @@ export default defineEventHandler(async (event): Promise<Course> => {
     })
   }
 
-  return updateCourseStatus(client, id, 'pending_review', null)
+  return updateCourseStatus(id, 'pending_review', null)
 })

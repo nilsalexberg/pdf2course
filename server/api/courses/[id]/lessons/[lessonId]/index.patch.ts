@@ -1,4 +1,3 @@
-import { serverSupabaseClient } from '#supabase/server'
 import { z } from 'zod'
 import { requireUser } from '../../../../../auth/requireUser'
 import { requireRole } from '../../../../../auth/requireRole'
@@ -14,8 +13,7 @@ const bodySchema = z.object({
 
 export default defineEventHandler(async (event): Promise<Lesson> => {
   const user = await requireUser(event)
-  const client = await serverSupabaseClient(event)
-  await requireRole(event, client, user.id)
+  await requireRole(event, user.id)
 
   const id = getRouterParam(event, 'id')
   const lessonId = getRouterParam(event, 'lessonId')
@@ -23,17 +21,16 @@ export default defineEventHandler(async (event): Promise<Lesson> => {
     throw createError({ statusCode: 400, statusMessage: 'Missing course or lesson ID' })
   }
 
-  const course = await getCourseById(client, id)
+  const course = await getCourseById(id)
   if (course.producer_id !== user.id) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   }
 
-  const lesson = await getLessonById(client, lessonId)
+  const lesson = await getLessonById(lessonId)
   if (lesson.course_id !== id) {
     throw createError({ statusCode: 404, statusMessage: 'Lesson not found' })
   }
 
   const body = await readValidatedBody(event, bodySchema.parse)
-
-  return await updateLesson(client, lessonId, body)
+  return updateLesson(lessonId, body)
 })
