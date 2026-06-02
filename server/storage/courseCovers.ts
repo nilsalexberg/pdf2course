@@ -1,7 +1,9 @@
 import { createError } from 'h3'
 import type { MultipartFile } from '../http/multipart'
+import { uploadObject, deleteObject, createPresignedUrl } from '../lib/storage'
 
-const COVER_MAX_SIZE_BYTES = 5 * 1024 * 1024 // 5MB
+const BUCKET = 'course-covers'
+const COVER_MAX_SIZE_BYTES = 5 * 1024 * 1024
 const ALLOWED_COVER_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
 
 export function buildCoverPath(userId: string, courseId: string, originalFilename: string) {
@@ -22,44 +24,25 @@ export function validateCoverFile(file: MultipartFile) {
   }
 }
 
-export async function uploadCourseCover(client: any, path: string, file: MultipartFile) {
-  const { error } = await client.storage.from('course-covers').upload(path, file.data, {
-    contentType: file.type,
-    upsert: true,
-  })
-  if (error) {
-    throw createError({ statusCode: 500, statusMessage: error.message })
-  }
+export async function uploadCourseCover(path: string, file: MultipartFile): Promise<void> {
   signedUrlCache.delete(path)
+  await uploadObject(BUCKET, path, Buffer.from(file.data), file.type)
 }
 
-const SAFETY_MARGIN_SEC = 300 // refresh 5 min before expiry
+const SAFETY_MARGIN_SEC = 300
 const signedUrlCache = new Map<string, { url: string; expiresAt: number }>()
 
-export async function createSignedCoverUrl(client: any, path: string, expiresSec: number) {
+export async function createSignedCoverUrl(path: string, expiresSec: number): Promise<string | null> {
   const now = Date.now()
   const cached = signedUrlCache.get(path)
-  if (cached) {
-    if (cached.expiresAt > now) return cached.url
-    signedUrlCache.delete(path)
-  }
+  if (cached && cached.expiresAt > now) return cached.url
+  signedUrlCache.delete(path)
 
-  const { data, error } = await client.storage.from('course-covers').createSignedUrl(path, expiresSec)
-  if (error) {
-    throw createError({ statusCode: 500, statusMessage: error.message })
-  }
-
-  const url = data?.signedUrl ?? null
-  if (url) {
-    signedUrlCache.set(path, { url, expiresAt: now + (expiresSec - SAFETY_MARGIN_SEC) * 1000 })
-  }
+  const url = await createPresignedUrl(BUCKET, path, expiresSec)
+  signedUrlCache.set(path, { url, expiresAt: now + (expiresSec - SAFETY_MARGIN_SEC) * 1000 })
   return url
 }
 
-export async function deleteCourseCover(client: any, path: string) {
-  const { error } = await client.storage.from('course-covers').remove([path])
-  if (error) {
-    throw createError({ statusCode: 500, statusMessage: error.message })
-  }
+export async function deleteCourseCover(path: string): Promise<void> {
+  await deleteObject(BUCKET, path)
 }
-

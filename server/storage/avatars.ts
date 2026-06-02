@@ -1,6 +1,8 @@
 import { createError } from 'h3'
 import type { MultipartFile } from '../http/multipart'
+import { uploadObject } from '../lib/storage'
 
+const BUCKET = 'avatars'
 const AVATAR_MAX_SIZE_BYTES = 5 * 1024 * 1024
 const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
 
@@ -19,14 +21,8 @@ export function validateAvatarFile(file: MultipartFile) {
   }
 }
 
-export async function uploadAvatar(client: any, path: string, file: MultipartFile): Promise<string> {
-  const { error } = await client.storage.from('avatars').upload(path, file.data, {
-    contentType: file.type,
-    upsert: true,
-  })
-  if (error) {
-    throw createError({ statusCode: 500, statusMessage: error.message })
-  }
-  const { data } = client.storage.from('avatars').getPublicUrl(path)
-  return data.publicUrl
+export async function uploadAvatar(path: string, file: MultipartFile): Promise<string> {
+  await uploadObject(BUCKET, path, Buffer.from(file.data), file.type)
+  const endpoint = process.env.MINIO_ENDPOINT || 'http://localhost:9000'
+  return `${endpoint}/${BUCKET}/${path}`
 }

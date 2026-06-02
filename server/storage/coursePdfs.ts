@@ -1,11 +1,12 @@
 import { createError } from 'h3'
 import type { MultipartFile } from '../http/multipart'
 import { CourseCreateLimits } from '../validators/courseSchemas'
+import { uploadObject, deleteObject, downloadObject, createPresignedUrl } from '../lib/storage'
 
+const BUCKET = 'course-pdfs'
 const ALLOWED_PDF_TYPE = 'application/pdf'
 
 export function buildPdfPath(userId: string, courseId: string, filename: string) {
-  // Use a clean filename or a random string to prevent issues with special characters
   const timestamp = Date.now()
   const cleanName = filename.replace(/[^a-z0-9.]/gi, '_').toLowerCase()
   return `${userId}/${courseId}/${timestamp}_${cleanName}`
@@ -26,29 +27,18 @@ export function validatePdfFile(file: MultipartFile) {
   }
 }
 
-export async function uploadCoursePdf(client: any, path: string, file: MultipartFile) {
-  const { error } = await client.storage.from('course-pdfs').upload(path, file.data, {
-    contentType: ALLOWED_PDF_TYPE,
-    upsert: true,
-  })
-  if (error) {
-    throw createError({ statusCode: 500, statusMessage: error.message })
-  }
+export async function uploadCoursePdf(path: string, file: MultipartFile): Promise<void> {
+  await uploadObject(BUCKET, path, Buffer.from(file.data), ALLOWED_PDF_TYPE)
 }
 
-export async function deleteCoursePdf(client: any, path: string) {
-  const { error } = await client.storage.from('course-pdfs').remove([path])
-  if (error) {
-    throw createError({ statusCode: 500, statusMessage: error.message })
-  }
+export async function deleteCoursePdf(path: string): Promise<void> {
+  await deleteObject(BUCKET, path)
 }
 
-export async function createSignedPdfUrl(client: any, path: string): Promise<string> {
-  const { data, error } = await client.storage.from('course-pdfs').createSignedUrl(path, 3600) // 1 hour
+export async function createSignedPdfUrl(path: string): Promise<string> {
+  return createPresignedUrl(BUCKET, path, 3600)
+}
 
-  if (error) {
-    throw createError({ statusCode: 500, statusMessage: error.message })
-  }
-
-  return data.signedUrl
+export async function downloadCoursePdf(path: string): Promise<Buffer> {
+  return downloadObject(BUCKET, path)
 }
