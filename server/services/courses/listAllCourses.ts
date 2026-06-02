@@ -4,15 +4,11 @@ import { createSignedCoverUrl } from '../../storage/courseCovers'
 
 const SIGNED_URL_EXPIRES_SEC = 3600
 
-export async function listAllCourses(client: any): Promise<CourseWithSignedCover[]> {
-  const courses = await listAllCoursesFromDb(client)
-
-  return Promise.all(
-    courses.map(async (course) => {
-      const cover_url_signed = course.cover_url
-        ? await createSignedCoverUrl(client, course.cover_url, SIGNED_URL_EXPIRES_SEC)
-        : null
-      return { ...(course as any), cover_url_signed }
-    }),
-  )
+export async function listAllCourses(): Promise<CourseWithSignedCover[]> {
+  const courses = await listAllCoursesFromDb()
+  if (!courses) throw createError({ statusCode: 500, statusMessage: 'Failed to list all courses' })
+  return Promise.all(courses.map(async course => ({
+    ...course,
+    cover_url_signed: course.cover_url ? await createSignedCoverUrl(course.cover_url, SIGNED_URL_EXPIRES_SEC) : null,
+  })))
 }

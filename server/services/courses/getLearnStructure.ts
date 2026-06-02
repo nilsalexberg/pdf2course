@@ -11,12 +11,9 @@ export interface LearnStructure {
   completedLessonIds: string[]
 }
 
-export async function getLearnStructure(
-  client: any,
-  courseId: string,
-  userId: string,
-): Promise<LearnStructure> {
-  const course = await getCourseById(client, courseId)
+export async function getLearnStructure(courseId: string, userId: string): Promise<LearnStructure> {
+  const course = await getCourseById(courseId)
+  if (!course) throw createError({ statusCode: 404, statusMessage: 'Course not found' })
 
   if (course.producer_id !== userId) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
@@ -27,11 +24,9 @@ export async function getLearnStructure(
   }
 
   const [cover_url_signed, modules, completions] = await Promise.all([
-    course.cover_url
-      ? createSignedCoverUrl(client, course.cover_url, SIGNED_URL_EXPIRES_SEC)
-      : Promise.resolve(null),
-    listModulesWithLessons(client, courseId),
-    listLessonCompletionsByCourse(client, userId, courseId),
+    course.cover_url ? createSignedCoverUrl(course.cover_url, SIGNED_URL_EXPIRES_SEC) : Promise.resolve(null),
+    listModulesWithLessons(courseId),
+    listLessonCompletionsByCourse(userId, courseId),
   ])
 
   return {

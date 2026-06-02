@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'PDF does not belong to this course' })
   }
 
-  await deleteCoursePdf(null, pdf.file_path)
+  await deleteCoursePdf(pdf.file_path)
   await deleteCoursePdfFromDb(pdfId)
 
   return { success: true }

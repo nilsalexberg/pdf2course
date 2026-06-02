@@ -7,7 +7,6 @@ import { buildCoverPath, uploadCourseCover, validateCoverFile } from '../../stor
 import { buildPdfPath, uploadCoursePdf, validatePdfFile } from '../../storage/coursePdfs'
 
 export async function createCourse(
-  client: any,
   userId: string,
   input: CourseCreateInput,
   coverFile: MultipartFile | null,
@@ -29,7 +28,7 @@ export async function createCourse(
     tone: input.tone,
   }
 
-  const course = await insertCourse(client, {
+  const course = await insertCourse({
     producer_id: userId,
     title: input.title,
     description: input.description,
@@ -37,20 +36,20 @@ export async function createCourse(
     config,
   })
 
-  // Handle Cover
+  if (!course) throw createError({ statusCode: 500, statusMessage: 'Course creation failed' })
+
   if (coverFile) {
     validateCoverFile(coverFile)
     const path = buildCoverPath(userId, course.id, coverFile.filename)
-    await uploadCourseCover(client, path, coverFile)
-    await updateCourseCoverUrl(client, course.id, path)
+    await uploadCourseCover(path, coverFile)
+    await updateCourseCoverUrl(course.id, path)
   }
 
-  // Handle PDFs
   for (const pdf of pdfs) {
     validatePdfFile(pdf)
     const path = buildPdfPath(userId, course.id, pdf.filename)
-    await uploadCoursePdf(client, path, pdf)
-    await insertCoursePdf(client, {
+    await uploadCoursePdf(path, pdf)
+    await insertCoursePdf({
       course_id: course.id,
       file_path: path,
       filename: pdf.filename,
@@ -58,5 +57,5 @@ export async function createCourse(
     })
   }
 
-  return { ...(course as any), cover_url: coverFile ? buildCoverPath(userId, course.id, coverFile.filename) : null }
+  return { ...course, cover_url: coverFile ? buildCoverPath(userId, course.id, coverFile.filename) : null }
 }

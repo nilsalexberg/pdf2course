@@ -22,6 +22,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   }
 
-  const url = await createSignedPdfUrl(null, pdf.file_path)
+  const url = await createSignedPdfUrl(pdf.file_path)
   return { url }
 })
