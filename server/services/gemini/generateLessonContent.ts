@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { getGeminiClient } from './geminiClient'
 import { embedBatch } from './embedChunks'
 import { semanticSearchChunks } from '../../repositories/courseRepo'
@@ -65,7 +64,6 @@ const lessonContentSchema = z.object({
 // ─── Context retrieval via RAG ────────────────────────────────────────────────
 
 async function retrieveContext(
-  client: SupabaseClient,
   lesson: Lesson,
 ): Promise<Array<{ id: string; content: string; similarity: number }>> {
   const MIN_QUERIES = 3
@@ -86,7 +84,7 @@ async function retrieveContext(
   // Search for similar chunks for each query
   const results = await Promise.all(
     embeddings.map((embedding) =>
-      semanticSearchChunks(client, lesson.course_id, embedding, CHUNKS_PER_QUERY),
+      semanticSearchChunks(lesson.course_id, embedding, CHUNKS_PER_QUERY),
     ),
   )
 
@@ -210,11 +208,10 @@ Create dynamic, engaging lesson content grounded in the source material above. P
  * in source material retrieved via semantic search over the course's document chunks.
  */
 export async function generateLessonContent(
-  client: SupabaseClient,
   lesson: Lesson,
   config: CourseConfig,
 ): Promise<LessonContent> {
-  const contextChunks = await retrieveContext(client, lesson)
+  const contextChunks = await retrieveContext(lesson)
   const prompt = buildPrompt(lesson, config, contextChunks)
   const ai = getGeminiClient()
 

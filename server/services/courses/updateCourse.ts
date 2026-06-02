@@ -7,14 +7,17 @@ import { buildCoverPath, uploadCourseCover, validateCoverFile, deleteCourseCover
 import { buildPdfPath, uploadCoursePdf, validatePdfFile } from '../../storage/coursePdfs'
 
 export async function updateCourse(
-  client: any,
   userId: string,
   courseId: string,
   input: CourseCreateInput,
   coverFile: MultipartFile | null,
   pdfs: MultipartFile[] = [],
-): Promise<Course> {
-  const course = await getCourseById(client, courseId)
+): Promise<Course | null> {
+  const course = await getCourseById(courseId)
+
+  if (!course) {
+    throw createError({ statusCode: 404, statusMessage: 'Course not found' })
+  }
 
   // Security check: ensure the user owns the course
   if (course.producer_id !== userId) {
@@ -30,7 +33,7 @@ export async function updateCourse(
     tone: input.tone,
   }
 
-  const updatedCourse = await updateRepoCourse(client, courseId, {
+  const updatedCourse = await updateRepoCourse(courseId, {
     title: input.title,
     description: input.description,
     config,
@@ -42,26 +45,27 @@ export async function updateCourse(
     // If there's an old cover, delete it
     if (course.cover_url) {
       try {
-        await deleteCourseCover(client, course.cover_url)
+        await deleteCourseCover(course.cover_url)
       } catch (err) {
         // Ignore if old cover is missing
       }
     }
 
     const coverPath = buildCoverPath(userId, courseId, coverFile.filename)
-    await uploadCourseCover(client, coverPath, coverFile)
-    await updateCourseCoverUrl(client, courseId, coverPath)
-    
+    await uploadCourseCover(coverPath, coverFile)
+    await updateCourseCoverUrl(courseId, coverPath)
+
     // Update the return object path
-    updatedCourse.cover_url = coverPath
+    if (updatedCourse) {
+      updatedCourse.cover_url = coverPath
+    }
   }
 
-  // Handle PDFs
   for (const pdf of pdfs) {
     validatePdfFile(pdf)
     const pdfPath = buildPdfPath(userId, courseId, pdf.filename)
-    await uploadCoursePdf(client, pdfPath, pdf)
-    await insertCoursePdf(client, {
+    await uploadCoursePdf(pdfPath, pdf)
+    await insertCoursePdf({
       course_id: courseId,
       file_path: pdfPath,
       filename: pdf.filename,

@@ -1,5 +1,4 @@
 import { createError } from 'h3'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCourseById, getLessonById, updateLessonStatus, updateLessonContent } from '../../repositories/courseRepo'
 import { generateLessonContent } from '../gemini/generateLessonContent'
 import type { Lesson } from '../../../types/course'
@@ -13,13 +12,12 @@ import type { Lesson } from '../../../types/course'
  * 5. On any failure, marks lesson as 'failed' and re-throws.
  */
 export async function processLessonGeneration(
-  client: SupabaseClient,
   courseId: string,
   lessonId: string,
   userId: string,
 ): Promise<Lesson> {
-  // ─── Authorization ──────────────────────────────────────────────────────────
-  const course = await getCourseById(client, courseId)
+  const course = await getCourseById(courseId)
+  if (!course) throw createError({ statusCode: 404, statusMessage: 'Course not found' })
 
   if (course.producer_id !== userId) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
@@ -31,9 +29,9 @@ export async function processLessonGeneration(
       statusMessage: 'Course structure must be fully generated before generating lesson content',
     })
   }
-
+  
   // ─── Fetch lesson and verify it belongs to this course ──────────────────────
-  const lesson = await getLessonById(client, lessonId)
+  const lesson = await getLessonById(lessonId)
 
   if (lesson.course_id !== courseId) {
     throw createError({ statusCode: 404, statusMessage: 'Lesson not found' })
@@ -44,13 +42,13 @@ export async function processLessonGeneration(
   }
 
   // ─── Generate ────────────────────────────────────────────────────────────────
-  await updateLessonStatus(client, lessonId, 'generating')
+  await updateLessonStatus(lessonId, 'generating')
   console.log(`[lesson-generation] Lesson ${lessonId} status → generating`)
 
   try {
-    const content = await generateLessonContent(client, lesson, course.config)
+    const content = await generateLessonContent(lesson, course.config)
 
-    const updated = await updateLessonContent(client, lessonId, content)
+    const updated = await updateLessonContent(lessonId, content)
     console.log(
       `[lesson-generation] Lesson ${lessonId} status → ready (${content.steps.filter(s => s.type !== 'section').length} exercises)`,
     )
@@ -62,7 +60,7 @@ export async function processLessonGeneration(
     console.error(`[lesson-generation] Failed for lesson ${lessonId}: ${message}`)
 
     // Best-effort status update so the UI is never stuck showing 'generating'
-    await updateLessonStatus(client, lessonId, 'failed', message).catch(() => { })
+    await updateLessonStatus(lessonId, 'failed', message).catch(() => { })
     throw err
   }
 }

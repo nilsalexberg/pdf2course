@@ -28,6 +28,7 @@ export interface Course {
   generation_status: GenerationStatus
   generation_error: string | null
   config: CourseConfig
+  generated_at: string | null
   created_at: string
   updated_at: string
 }
