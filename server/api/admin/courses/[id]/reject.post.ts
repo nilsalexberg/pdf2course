@@ -1,20 +1,20 @@
-import { z } from 'zod'
-import type { Course } from '../../../../../types/course'
-import { requireUser } from '../../../../auth/requireUser'
-import { requireRole } from '../../../../auth/requireRole'
-import { updateCourseStatus } from '../../../../repositories/courseRepo'
+import { z } from 'zod';
+import type { Course } from '../../../../../types/course';
+import { requireUser } from '../../../../auth/requireUser';
+import { requireRole } from '../../../../auth/requireRole';
+import { updateCourseStatus } from '../../../../repositories/courseRepo';
 
 const bodySchema = z.object({
-  reason: z.string().min(1, 'Rejection reason is required'),
-})
+  reason: z.string().min(1, 'Rejection reason is required')
+});
 
 export default defineEventHandler(async (event): Promise<Course> => {
-  const user = await requireUser(event)
-  await requireRole(event, user.id, true)
+  const user = await requireUser(event);
+  await requireRole(event, user.id, true);
 
-  const id = getRouterParam(event, 'id')!
-  const body = await readBody(event)
-  const { reason } = bodySchema.parse(body)
+  const id = getRouterParam(event, 'id')!;
+  const body = await readBody(event);
+  const { reason } = bodySchema.parse(body);
 
-  return updateCourseStatus(id, 'rejected', reason)
-})
+  return updateCourseStatus(id, 'rejected', reason);
+});

@@ -1,4 +1,5 @@
 # PRD — pdf2course
+
 ## Automatic Duolingo-Style Course Generator from PDFs
 
 ---
@@ -36,12 +37,12 @@ There are no separate "producer" and "student" roles. Every user is both a poten
 
 ### 1.4 Success Metrics (KPIs)
 
-| Metric | Initial Target |
-|---|---|
-| Average course creation time | < 30 min |
-| Module completion rate | > 70% |
-| User NPS | > 40 |
-| AI content generation time | < 5 min per module |
+| Metric                            | Initial Target         |
+| --------------------------------- | ---------------------- |
+| Average course creation time      | < 30 min               |
+| Module completion rate            | > 70%                  |
+| User NPS                          | > 40                   |
+| AI content generation time        | < 5 min per module     |
 | Public courses published per week | Growing week-over-week |
 
 ---
@@ -75,14 +76,15 @@ Admins can also use the platform as regular users (create and play courses).
 
 Every course has a `visibility` field that controls who can access it:
 
-| Visibility Status | Description |
-|---|---|
-| `private` | Only the creator can see and play it. Default when a course is created. |
-| `pending_review` | The creator has requested public publication. Visible only to the creator and admins. |
-| `public` | Approved by admin. Visible and playable by all users on the platform. |
-| `rejected` | Admin rejected the publication request. Returned to the creator as `private` with a rejection reason. |
+| Visibility Status | Description                                                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------------- |
+| `private`         | Only the creator can see and play it. Default when a course is created.                               |
+| `pending_review`  | The creator has requested public publication. Visible only to the creator and admins.                 |
+| `public`          | Approved by admin. Visible and playable by all users on the platform.                                 |
+| `rejected`        | Admin rejected the publication request. Returned to the creator as `private` with a rejection reason. |
 
 **Rules:**
+
 - A course starts as `private` by default.
 - The creator can switch a course from `private` to `pending_review` at any time.
 - Once `rejected`, the course reverts to `private` and can be edited and resubmitted.
@@ -95,20 +97,20 @@ Every course has a `visibility` field that controls who can access it:
 
 ### 4.1 Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | Nuxt.js 3 + Vue 3 (Composition API) |
-| Backend / API | Nuxt.js Server Routes (Nitro) |
-| Language | TypeScript (strict mode) |
-| Styling | Tailwind CSS + shadcn/ui (Vue port) |
-| Database | Supabase (PostgreSQL) |
-| Authentication | Supabase Auth (email/password + OAuth) |
-| File Storage | Supabase Storage |
-| AI Content Generation | Google Gemini API — `gemini-2.5-flash` |
-| Embeddings / RAG | `@xenova/transformers` or OpenAI Embeddings API (stored in Supabase with `pgvector`) |
-| PDF Extraction | `pdf-parse` (Node) |
-| Background Job Queue | **BullMQ** (backed by Redis) |
-| Cache / Queue Broker | Redis (Upstash or self-hosted) |
+| Layer                 | Technology                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| Frontend              | Nuxt.js 3 + Vue 3 (Composition API)                                                  |
+| Backend / API         | Nuxt.js Server Routes (Nitro)                                                        |
+| Language              | TypeScript (strict mode)                                                             |
+| Styling               | Tailwind CSS + shadcn/ui (Vue port)                                                  |
+| Database              | Supabase (PostgreSQL)                                                                |
+| Authentication        | Supabase Auth (email/password + OAuth)                                               |
+| File Storage          | Supabase Storage                                                                     |
+| AI Content Generation | Google Gemini API — `gemini-2.5-flash`                                               |
+| Embeddings / RAG      | `@xenova/transformers` or OpenAI Embeddings API (stored in Supabase with `pgvector`) |
+| PDF Extraction        | `pdf-parse` (Node)                                                                   |
+| Background Job Queue  | **BullMQ** (backed by Redis)                                                         |
+| Cache / Queue Broker  | Redis (Upstash or self-hosted)                                                       |
 
 ### 4.2 Core Data Model (Supabase / PostgreSQL)
 
@@ -152,6 +154,7 @@ jobs                 → id, generation_id, queue_name, type, payload (jsonb),
 ```
 
 **Key design decisions:**
+
 - `plays` replaces `enrollments` — a user simply "starts playing" a course, no prior enrollment needed for public courses.
 - `user_stats` is global per user (not per course), reflecting the unified learner identity.
 - `creator_id` in `courses` links to `profiles`, with no special role required to create a course.
@@ -162,16 +165,16 @@ jobs                 → id, generation_id, queue_name, type, payload (jsonb),
 
 ### 4.3 Row Level Security (RLS) Rules
 
-| Table | Rule |
-|---|---|
-| `courses` | Creator can read/write their own. All users can read `public` courses. Admins can read all. |
-| `course_pdfs` | Creator only. |
-| `document_chunks` | Creator only (server-side service role for writes). |
-| `modules / lessons / exercises` | Creator can write. Any user can read if course is `public`. |
-| `plays` | User can read/write their own plays only. |
-| `lesson_progress / exercise_attempts` | User can read/write their own records only. |
-| `user_stats` | User can read/write their own stats only. |
-| `jobs` | Server-side only (service role). |
+| Table                                 | Rule                                                                                        |
+| ------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `courses`                             | Creator can read/write their own. All users can read `public` courses. Admins can read all. |
+| `course_pdfs`                         | Creator only.                                                                               |
+| `document_chunks`                     | Creator only (server-side service role for writes).                                         |
+| `modules / lessons / exercises`       | Creator can write. Any user can read if course is `public`.                                 |
+| `plays`                               | User can read/write their own plays only.                                                   |
+| `lesson_progress / exercise_attempts` | User can read/write their own records only.                                                 |
+| `user_stats`                          | User can read/write their own stats only.                                                   |
+| `jobs`                                | Server-side only (service role).                                                            |
 
 ### 4.4 Nuxt Folder Structure
 
@@ -287,14 +290,14 @@ The generation process runs entirely in the background via **BullMQ** workers co
 
 **BullMQ Queues**
 
-| Queue Name | Responsibility |
-|---|---|
-| `pdf-processing` | Text extraction and cleaning |
-| `chunking` | Document splitting and chunk persistence |
-| `embeddings` | Embedding generation and storage (pgvector) |
-| `keyphrase-extraction` | Semantic keyphrase extraction per chunk |
-| `summarization` | Chunk-level, document-level, and course-level summaries |
-| `course-structure` | Gemini call → modules + lesson stubs |
+| Queue Name             | Responsibility                                          |
+| ---------------------- | ------------------------------------------------------- |
+| `pdf-processing`       | Text extraction and cleaning                            |
+| `chunking`             | Document splitting and chunk persistence                |
+| `embeddings`           | Embedding generation and storage (pgvector)             |
+| `keyphrase-extraction` | Semantic keyphrase extraction per chunk                 |
+| `summarization`        | Chunk-level, document-level, and course-level summaries |
+| `course-structure`     | Gemini call → modules + lesson stubs                    |
 
 **Pipeline Steps**
 
@@ -341,6 +344,7 @@ Step 7 — Completion
 ```
 
 **Notes for the AI agent:**
+
 - Each BullMQ worker must update `jobs` table on start, completion, and failure for audit purposes.
 - If any step fails, the worker must set `courses.generation_status` to `failed`, update the job record, and notify the user via Realtime.
 - BullMQ retry policy per queue: 3 attempts with exponential backoff (1s, 5s, 30s).
@@ -427,14 +431,14 @@ Step 7 — Completion
 
 **Screen Types**
 
-| Type | Description |
-|---|---|
-| `content_text` | Explanatory text with rich formatting |
-| `content_tip` | Tip or highlight in a special card (e.g., "Did you know?") |
-| `exercise_multiple_choice` | Question with 4 options, only one correct |
-| `exercise_true_false` | Statement to judge as true or false |
-| `exercise_fill_blank` | Text with a blank to fill in |
-| `exercise_ordering` | Ordering items/sentences in the correct sequence |
+| Type                       | Description                                                |
+| -------------------------- | ---------------------------------------------------------- |
+| `content_text`             | Explanatory text with rich formatting                      |
+| `content_tip`              | Tip or highlight in a special card (e.g., "Did you know?") |
+| `exercise_multiple_choice` | Question with 4 options, only one correct                  |
+| `exercise_true_false`      | Statement to judge as true or false                        |
+| `exercise_fill_blank`      | Text with a blank to fill in                               |
+| `exercise_ordering`        | Ordering items/sentences in the correct sequence           |
 
 **Exercise Functional Requirements**
 
@@ -631,12 +635,14 @@ Step 7 — Completion
 ## 10. API Endpoints (Nuxt Server Routes)
 
 ### Auth / Profile
+
 ```
 GET    /api/profile                          ← Get current user profile
 PUT    /api/profile                          ← Update profile
 ```
 
 ### Courses
+
 ```
 POST   /api/courses                          ← Create course
 GET    /api/courses/mine                     ← List user's own courses
@@ -651,6 +657,7 @@ POST   /api/courses/[id]/make-private        ← Pull public course back to priv
 ```
 
 ### Modules and Lessons
+
 ```
 GET    /api/courses/[id]/modules             ← List modules
 PUT    /api/modules/[id]                     ← Edit module
@@ -662,6 +669,7 @@ PUT    /api/lessons/[id]/exercises           ← Update lesson exercises
 ```
 
 ### Playing
+
 ```
 POST   /api/plays                            ← Start playing a course (creates play record)
 GET    /api/plays/[courseId]                 ← Get user's play record for a course
@@ -671,12 +679,14 @@ GET    /api/plays/[playId]/progress          ← Full progress for a play sessio
 ```
 
 ### Stats and Gamification
+
 ```
 GET    /api/stats/me                         ← Current user's XP, streak, badges
 GET    /api/stats/leaderboard                ← Weekly global leaderboard
 ```
 
 ### Admin
+
 ```
 GET    /api/admin/courses                    ← All courses (filterable by visibility)
 POST   /api/admin/courses/[id]/approve       ← Approve course (→ public)
@@ -705,17 +715,17 @@ GET    /api/admin/metrics                    ← Platform metrics
 **Sample call (reference for the AI agent):**
 
 ```typescript
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash",
+  model: 'gemini-2.5-flash',
   generationConfig: {
-    responseMimeType: "application/json",
+    responseMimeType: 'application/json',
     responseSchema: courseStructureSchema,
-    temperature: 0.4,
-  },
+    temperature: 0.4
+  }
 });
 
 const result = await model.generateContent(prompt);
@@ -735,6 +745,7 @@ const structure = JSON.parse(result.response.text());
 - **Observability:** BullMQ's built-in events (`completed`, `failed`, `progress`) are used to sync the `jobs` table and push Realtime updates.
 
 **Environment variables required:**
+
 ```
 REDIS_URL=redis://...        # Upstash or self-hosted Redis connection string
 GEMINI_API_KEY=...
@@ -753,23 +764,24 @@ SUPABASE_SERVICE_ROLE_KEY=... # Workers use service role to bypass RLS
 
 ## 12. Error Handling Policy
 
-| Scenario | Behavior |
-|---|---|
-| Corrupted or unreadable PDF | `pdf-processing` job fails; `generation_status` → `failed`; user notified via Realtime with guidance to re-upload |
-| BullMQ job failure (any step) | Automatic retry up to 3x with exponential backoff; after all retries exhausted, `generation_status` → `failed`, `jobs.last_error` persisted, user notified |
-| Google Gemini API error | Handled inside `course-structure` (and per-lesson) worker; retried per BullMQ policy; on final failure, status set to `failed` |
-| Generation timeout | Job marked as `stalled` by BullMQ after lock expires; treated as failure; user can manually re-trigger |
-| Redis / BullMQ unavailable | API returns 503 with a user-facing message; generation cannot be started until queue is healthy |
-| Embedding service error | `embeddings` job retried; on failure, pipeline continues without embeddings (RAG degraded) — flagged in job metadata |
-| Form validation error | Inline field feedback; never erase already-filled data |
-| Unauthorized access to private course | Return 403; redirect to dashboard |
-| Expired session | Redirect to login with return to original page after authentication |
+| Scenario                              | Behavior                                                                                                                                                   |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Corrupted or unreadable PDF           | `pdf-processing` job fails; `generation_status` → `failed`; user notified via Realtime with guidance to re-upload                                          |
+| BullMQ job failure (any step)         | Automatic retry up to 3x with exponential backoff; after all retries exhausted, `generation_status` → `failed`, `jobs.last_error` persisted, user notified |
+| Google Gemini API error               | Handled inside `course-structure` (and per-lesson) worker; retried per BullMQ policy; on final failure, status set to `failed`                             |
+| Generation timeout                    | Job marked as `stalled` by BullMQ after lock expires; treated as failure; user can manually re-trigger                                                     |
+| Redis / BullMQ unavailable            | API returns 503 with a user-facing message; generation cannot be started until queue is healthy                                                            |
+| Embedding service error               | `embeddings` job retried; on failure, pipeline continues without embeddings (RAG degraded) — flagged in job metadata                                       |
+| Form validation error                 | Inline field feedback; never erase already-filled data                                                                                                     |
+| Unauthorized access to private course | Return 403; redirect to dashboard                                                                                                                          |
+| Expired session                       | Redirect to login with return to original page after authentication                                                                                        |
 
 ---
 
 ## 13. Development Phases (Suggested Roadmap)
 
 ### Phase 1 — MVP
+
 - Authentication (email/password + Google OAuth)
 - Unified dashboard (My Courses, Continue Playing, Discover)
 - Course creation + PDF upload + AI generation pipeline
@@ -780,6 +792,7 @@ SUPABASE_SERVICE_ROLE_KEY=... # Workers use service role to bypass RLS
 - Admin review panel
 
 ### Phase 2 — Full Gamification
+
 - All exercise types (fill_blank, ordering)
 - Lives (hearts) system
 - XP, streaks, all badges, leaderboard
@@ -787,18 +800,21 @@ SUPABASE_SERVICE_ROLE_KEY=... # Workers use service role to bypass RLS
 - Animated celebration screens
 
 ### Phase 3 — Social and Discovery
+
 - Public course catalog with search and filters
 - Creator profile pages (public courses by a user)
 - Course ratings and comments
 - "Featured" courses curated by admin
 
 ### Phase 4 — Advanced Creation Tools
+
 - Drag-and-drop content editor
 - Partial module regeneration
 - Analytics for course creators (plays, completion rate per lesson)
 - Push notifications / PWA
 
 ### Phase 5 — Scale
+
 - Multi-language support (i18n)
 - SCORM export for LMS integration
 - Public API for external integrations
@@ -809,6 +825,7 @@ SUPABASE_SERVICE_ROLE_KEY=... # Workers use service role to bypass RLS
 ## 14. Acceptance Criteria by Module
 
 ### AC-01: Course Creation and Generation
+
 - [ ] Any authenticated user can create a course from the dashboard.
 - [ ] Clicking "Generate Course" immediately sets `generation_status` to `processing` and enqueues the pipeline in BullMQ.
 - [ ] The frontend reflects each pipeline stage in real time via Supabase Realtime (`processing` → `generating_structure` → `ready`).
@@ -817,29 +834,34 @@ SUPABASE_SERVICE_ROLE_KEY=... # Workers use service role to bypass RLS
 - [ ] A newly created course always starts as `visibility: private`.
 
 ### AC-02: Visibility Flow
+
 - [ ] The user can submit a course for review; it immediately becomes `pending_review` and is locked for editing.
 - [ ] The user can cancel the submission; the course reverts to `private` and becomes editable again.
 - [ ] After admin approval, the course appears in the public discovery catalog.
 - [ ] After admin rejection, the course reverts to `private` with the rejection reason visible to the creator.
 
 ### AC-03: Lesson Engine
+
 - [ ] The user can complete a lesson from start to finish without interface errors.
 - [ ] Progress is saved if the user exits mid-lesson.
 - [ ] Correct/incorrect feedback appears within 300ms of the user's response.
 - [ ] The course creator playing their own course goes through the same lesson engine as any other user.
 
 ### AC-04: Gamification
+
 - [ ] XP is credited immediately upon lesson completion.
 - [ ] Streaks update correctly at midnight UTC.
 - [ ] Badges are automatically awarded upon meeting their criteria.
 - [ ] The "Creator" badge is awarded when a course is approved for the first time.
 
 ### AC-05: Discovery
+
 - [ ] Only `public` courses appear in the discovery feed.
 - [ ] A user's own courses do not appear in the discovery feed (they appear in "My Courses").
 - [ ] Any user can start playing a public course directly from the discovery page.
 
 ### AC-06: Admin
+
 - [ ] Admin can approve a pending course; it immediately becomes public.
 - [ ] Admin can reject a course with a required written reason; it reverts to private.
 - [ ] Admin can force any public course back to private.
@@ -849,27 +871,27 @@ SUPABASE_SERVICE_ROLE_KEY=... # Workers use service role to bypass RLS
 
 ## 15. Glossary
 
-| Term | Definition |
-|---|---|
-| **Course** | A set of modules auto-generated from PDFs by a user |
-| **Module** | Thematic grouping of lessons within a course |
-| **Lesson** | Minimum learning unit composed of content blocks and exercises |
-| **Exercise** | Interactive question to validate the learner's knowledge |
-| **Screen** | Individual screen in the lesson engine (content or exercise) |
-| **Play** | A user's active learning session for a specific course |
-| **Visibility** | A course's publication state: private, pending_review, public, or rejected |
-| **Generation Status** | A course's pipeline progress state: idle, processing, generating_structure, ready, or failed |
-| **Chunk** | A fixed-size overlapping segment of extracted PDF text, stored with its embedding and keyphrases |
-| **Embedding** | A vector representation of a text chunk, stored in pgvector for semantic retrieval |
-| **RAG** | Retrieval-Augmented Generation — technique of retrieving relevant chunks to ground AI generation |
-| **BullMQ** | Node.js job queue library backed by Redis, used for all background processing |
-| **XP** | Global experience points accumulated by a user across all courses |
-| **Streak** | Number of consecutive days with at least one completed lesson |
-| **Badge** | Achievement unlocked upon reaching specific milestones |
-| **Heart (Life)** | Resource lost on incorrect answers; limits attempts without a pause |
-| **Job** | A single BullMQ task in the generation pipeline, tracked in the `jobs` table |
-| **RLS** | Row Level Security — Supabase's row-level data access control mechanism |
+| Term                  | Definition                                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------------------ |
+| **Course**            | A set of modules auto-generated from PDFs by a user                                              |
+| **Module**            | Thematic grouping of lessons within a course                                                     |
+| **Lesson**            | Minimum learning unit composed of content blocks and exercises                                   |
+| **Exercise**          | Interactive question to validate the learner's knowledge                                         |
+| **Screen**            | Individual screen in the lesson engine (content or exercise)                                     |
+| **Play**              | A user's active learning session for a specific course                                           |
+| **Visibility**        | A course's publication state: private, pending_review, public, or rejected                       |
+| **Generation Status** | A course's pipeline progress state: idle, processing, generating_structure, ready, or failed     |
+| **Chunk**             | A fixed-size overlapping segment of extracted PDF text, stored with its embedding and keyphrases |
+| **Embedding**         | A vector representation of a text chunk, stored in pgvector for semantic retrieval               |
+| **RAG**               | Retrieval-Augmented Generation — technique of retrieving relevant chunks to ground AI generation |
+| **BullMQ**            | Node.js job queue library backed by Redis, used for all background processing                    |
+| **XP**                | Global experience points accumulated by a user across all courses                                |
+| **Streak**            | Number of consecutive days with at least one completed lesson                                    |
+| **Badge**             | Achievement unlocked upon reaching specific milestones                                           |
+| **Heart (Life)**      | Resource lost on incorrect answers; limits attempts without a pause                              |
+| **Job**               | A single BullMQ task in the generation pipeline, tracked in the `jobs` table                     |
+| **RLS**               | Row Level Security — Supabase's row-level data access control mechanism                          |
 
 ---
 
-*Document generated for use by an AI agent building the pdf2course system.*
+_Document generated for use by an AI agent building the pdf2course system._

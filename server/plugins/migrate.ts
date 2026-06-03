@@ -1,9 +1,9 @@
-import { migrate } from 'drizzle-orm/postgres-js/migrator'
-import { drizzle } from 'drizzle-orm/postgres-js'
-import postgres from 'postgres'
-import { sql } from 'drizzle-orm'
-import { resolve } from 'path'
-import { existsSync } from 'fs'
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import { sql } from 'drizzle-orm';
+import { resolve } from 'path';
+import { existsSync } from 'fs';
 
 // TODO(Issue 1): The embedding column and match_document_chunks function are applied via
 // raw SQL below, untracked by Drizzle. They should be extracted into a dedicated migration
@@ -11,40 +11,40 @@ import { existsSync } from 'fs'
 // omits the vector column (pgvector not natively supported by Drizzle) — doing so would
 // require a schema plugin or custom type, which is an architectural decision beyond this file.
 
-const EMBEDDING_DIMENSIONS = 3072
+const EMBEDDING_DIMENSIONS = 3072;
 
 export default defineNitroPlugin(async () => {
   if (!process.env.DATABASE_URL) {
-    throw new Error('[migrate] DATABASE_URL is required')
+    throw new Error('[migrate] DATABASE_URL is required');
   }
 
-  const migrationsFolder = resolve(process.cwd(), 'drizzle/migrations')
+  const migrationsFolder = resolve(process.cwd(), 'drizzle/migrations');
   if (!existsSync(migrationsFolder)) {
-    console.warn('[migrate] No migrations folder found — run `pnpm db:generate`')
-    return
+    console.warn('[migrate] No migrations folder found — run `pnpm db:generate`');
+    return;
   }
 
-  const client = postgres(process.env.DATABASE_URL, { max: 1 })
-  const db = drizzle(client)
+  const client = postgres(process.env.DATABASE_URL, { max: 1 });
+  const db = drizzle(client);
 
   try {
     try {
-      await db.execute(sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`)
+      await db.execute(sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
     } catch (err) {
-      console.warn('[migrate] Could not create pgcrypto extension (may require superuser):', err)
+      console.warn('[migrate] Could not create pgcrypto extension (may require superuser):', err);
     }
 
     try {
-      await db.execute(sql`CREATE EXTENSION IF NOT EXISTS vector`)
+      await db.execute(sql`CREATE EXTENSION IF NOT EXISTS vector`);
     } catch (err) {
-      console.warn('[migrate] Could not create vector extension (may require superuser):', err)
+      console.warn('[migrate] Could not create vector extension (may require superuser):', err);
     }
 
-    await migrate(db, { migrationsFolder })
+    await migrate(db, { migrationsFolder });
 
     await db.execute(
-      sql`ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS embedding vector(${sql.raw(String(EMBEDDING_DIMENSIONS))})`,
-    )
+      sql`ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS embedding vector(${sql.raw(String(EMBEDDING_DIMENSIONS))})`
+    );
 
     await db.execute(sql`
       CREATE OR REPLACE FUNCTION match_document_chunks(
@@ -61,13 +61,13 @@ export default defineNitroPlugin(async () => {
         ORDER BY embedding <=> p_query_embedding
         LIMIT p_match_count;
       $$
-    `)
+    `);
 
-    console.log('[migrate] Migrations applied successfully')
+    console.log('[migrate] Migrations applied successfully');
   } catch (err) {
-    console.error('[migrate] Fatal error:', err)
-    throw err
+    console.error('[migrate] Fatal error:', err);
+    throw err;
   } finally {
-    await client.end()
+    await client.end();
   }
-})
+});

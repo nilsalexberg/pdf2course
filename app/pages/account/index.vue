@@ -1,23 +1,23 @@
 <script setup lang="ts">
-definePageMeta({ middleware: ['auth'] })
+  definePageMeta({ middleware: ['auth'] });
 
-const { profile } = useProfile()
-const { setBreadcrumbs } = useBreadcrumbs()
-const { $authClient } = useNuxtApp()
-const authUser = useState<any>('authUser')
-const router = useRouter()
+  const { profile } = useProfile();
+  const { setBreadcrumbs } = useBreadcrumbs();
+  const { $authClient } = useNuxtApp();
+  const authUser = useState<any>('authUser');
+  const router = useRouter();
 
-setBreadcrumbs([{ label: 'My Account' }])
-useHead({ title: 'My Account · pdf2course' })
+  setBreadcrumbs([{ label: 'My Account' }]);
+  useHead({ title: 'My Account · pdf2course' });
 
-const loggingOut = ref(false)
+  const loggingOut = ref(false);
 
-async function logout() {
-  loggingOut.value = true
-  await $authClient.signOut()
-  authUser.value = null
-  router.push('/auth/login')
-}
+  async function logout() {
+    loggingOut.value = true;
+    await $authClient.signOut();
+    authUser.value = null;
+    router.push('/auth/login');
+  }
 </script>
 
 <template>
@@ -29,7 +29,7 @@ async function logout() {
           :src="profile.avatar_url"
           alt="Profile photo"
           class="h-16 w-16 rounded-full object-cover border-2 border-slate-700"
-        >
+        />
         <div
           v-else
           class="h-16 w-16 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-2xl font-bold text-slate-400"

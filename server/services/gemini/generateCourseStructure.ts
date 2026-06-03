@@ -1,38 +1,43 @@
-import { z } from 'zod'
-import { getGeminiClient } from './geminiClient'
-import type { Course, CoursePdf } from '../../../types/course'
+import { z } from 'zod';
+import { getGeminiClient } from './geminiClient';
+import type { Course, CoursePdf } from '../../../types/course';
 
-const STRUCTURE_MODEL = 'gemini-2.5-flash'
+const STRUCTURE_MODEL = 'gemini-2.5-flash';
 
 const lessonSchema = z.object({
   lesson_number: z.number().int().positive(),
   title: z.string(),
   description: z.string(),
   learning_objectives: z.array(z.string()),
-  key_topics: z.array(z.string()),
-})
+  key_topics: z.array(z.string())
+});
 
 const moduleSchema = z.object({
   module_number: z.number().int().positive(),
   title: z.string(),
   description: z.string(),
-  lessons: z.array(lessonSchema),
-})
+  lessons: z.array(lessonSchema)
+});
 
 export const courseStructureSchema = z.object({
-  modules: z.array(moduleSchema),
-})
+  modules: z.array(moduleSchema)
+});
 
-export type CourseStructure = z.infer<typeof courseStructureSchema>
-export type GeneratedModule = z.infer<typeof moduleSchema>
-export type GeneratedLesson = z.infer<typeof lessonSchema>
+export type CourseStructure = z.infer<typeof courseStructureSchema>;
+export type GeneratedModule = z.infer<typeof moduleSchema>;
+export type GeneratedLesson = z.infer<typeof lessonSchema>;
 
-function buildPrompt(course: Course, pdfs: CoursePdf[], numModules: number, lessonsPerModule: number): string {
-  const { config } = course
+function buildPrompt(
+  course: Course,
+  pdfs: CoursePdf[],
+  numModules: number,
+  lessonsPerModule: number
+): string {
+  const { config } = course;
   const summariesText = pdfs
     .filter((p) => p.ai_summary)
     .map((p, i) => `### Document ${i + 1}: ${p.filename}\n${JSON.stringify(p.ai_summary, null, 2)}`)
-    .join('\n\n')
+    .join('\n\n');
 
   return `You are a Senior Instructional Designer specializing in creating structured, engaging courses.
 
@@ -79,10 +84,10 @@ ${summariesText}
       ]
     }
   ]
-}`
+}`;
 }
 
-const MAX_RETRIES = 3
+const MAX_RETRIES = 3;
 
 /**
  * Calls Gemini to generate the full course structure (modules + lessons) from
@@ -92,54 +97,53 @@ const MAX_RETRIES = 3
  */
 export async function generateCourseStructure(
   course: Course,
-  pdfs: CoursePdf[],
+  pdfs: CoursePdf[]
 ): Promise<CourseStructure> {
-  const numModules = course.config.num_modules ?? 3
-  const lessonsPerModule = course.config.lessons_per_module ?? 3
-  const ai = getGeminiClient()
-  const prompt = buildPrompt(course, pdfs, numModules, lessonsPerModule)
+  const numModules = course.config.num_modules ?? 3;
+  const lessonsPerModule = course.config.lessons_per_module ?? 3;
+  const ai = getGeminiClient();
+  const prompt = buildPrompt(course, pdfs, numModules, lessonsPerModule);
 
-  let lastError: unknown
+  let lastError: unknown;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const response = await ai.models.generateContent({
         model: STRUCTURE_MODEL,
         contents: prompt,
-        config: { responseMimeType: 'application/json' },
-      })
+        config: { responseMimeType: 'application/json' }
+      });
 
-      const raw = response.text
+      const raw = response.text;
       if (!raw) {
-        throw new Error('Gemini returned an empty response for course structure generation')
+        throw new Error('Gemini returned an empty response for course structure generation');
       }
 
-      const parsed = courseStructureSchema.parse(JSON.parse(raw))
+      const parsed = courseStructureSchema.parse(JSON.parse(raw));
 
       if (parsed.modules.length !== numModules) {
         throw new Error(
-          `Expected ${numModules} modules but Gemini returned ${parsed.modules.length}`,
-        )
+          `Expected ${numModules} modules but Gemini returned ${parsed.modules.length}`
+        );
       }
 
       for (const mod of parsed.modules) {
         if (mod.lessons.length !== lessonsPerModule) {
           throw new Error(
-            `Module "${mod.title}" expected ${lessonsPerModule} lessons but has ${mod.lessons.length}`,
-          )
+            `Module "${mod.title}" expected ${lessonsPerModule} lessons but has ${mod.lessons.length}`
+          );
         }
       }
 
-      return parsed
-    }
-    catch (err) {
-      lastError = err
-      const message = err instanceof Error ? err.message : String(err)
+      return parsed;
+    } catch (err) {
+      lastError = err;
+      const message = err instanceof Error ? err.message : String(err);
       console.warn(
-        `[generateCourseStructure] Attempt ${attempt}/${MAX_RETRIES} failed: ${message}`,
-      )
+        `[generateCourseStructure] Attempt ${attempt}/${MAX_RETRIES} failed: ${message}`
+      );
     }
   }
 
-  throw lastError
+  throw lastError;
 }

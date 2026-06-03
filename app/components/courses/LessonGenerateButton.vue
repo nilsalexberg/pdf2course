@@ -1,39 +1,37 @@
 <script setup lang="ts">
-import type { Lesson } from '@@/types/course'
+  import type { Lesson } from '@@/types/course';
 
-const props = defineProps<{
-  lesson: Lesson
-}>()
+  const props = defineProps<{
+    lesson: Lesson;
+  }>();
 
-const emit = defineEmits<{
-  'update:lesson': [lesson: Lesson]
-}>()
+  const emit = defineEmits<{
+    'update:lesson': [lesson: Lesson];
+  }>();
 
-const isGenerating = ref(false)
-const isInProgress = computed(() => isGenerating.value || props.lesson.status === 'generating')
+  const isGenerating = ref(false);
+  const isInProgress = computed(() => isGenerating.value || props.lesson.status === 'generating');
 
-async function generateContent() {
-  if (isInProgress.value) return
-  isGenerating.value = true
+  async function generateContent() {
+    if (isInProgress.value) return;
+    isGenerating.value = true;
 
-  try {
-    const updated = await $fetch<Lesson>(
-      `/api/courses/${props.lesson.course_id}/lessons/${props.lesson.id}/generate`,
-      { method: 'POST' },
-    )
-    emit('update:lesson', updated)
+    try {
+      const updated = await $fetch<Lesson>(
+        `/api/courses/${props.lesson.course_id}/lessons/${props.lesson.id}/generate`,
+        { method: 'POST' }
+      );
+      emit('update:lesson', updated);
+    } catch (err: any) {
+      emit('update:lesson', {
+        ...props.lesson,
+        status: 'failed',
+        generation_error: err?.data?.statusMessage ?? err?.message ?? 'Unknown error'
+      });
+    } finally {
+      isGenerating.value = false;
+    }
   }
-  catch (err: any) {
-    emit('update:lesson', {
-      ...props.lesson,
-      status: 'failed',
-      generation_error: err?.data?.statusMessage ?? err?.message ?? 'Unknown error',
-    })
-  }
-  finally {
-    isGenerating.value = false
-  }
-}
 </script>
 
 <template>

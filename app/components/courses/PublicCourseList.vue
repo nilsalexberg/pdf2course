@@ -1,81 +1,81 @@
 <script setup lang="ts">
-import type { CourseWithSignedCover } from '@@/types/course'
+  import type { CourseWithSignedCover } from '@@/types/course';
 
-interface PublicCoursesResponse {
-  courses: CourseWithSignedCover[]
-  total: number
-}
-
-const search = ref('')
-const courses = ref<CourseWithSignedCover[]>([])
-const total = ref(0)
-const page = ref(1)
-const loading = ref(true)
-const loadingMore = ref(false)
-const error = ref<string | null>(null)
-
-const hasMore = computed(() => courses.value.length < total.value)
-
-const sentinel = ref<HTMLElement | null>(null)
-
-async function fetchCourses(reset = false) {
-  if (reset) {
-    page.value = 1
-    loading.value = true
-    error.value = null
-  }
-  else {
-    loadingMore.value = true
+  interface PublicCoursesResponse {
+    courses: CourseWithSignedCover[];
+    total: number;
   }
 
-  try {
-    const params: Record<string, string | number> = { page: reset ? 1 : page.value }
-    if (search.value.trim()) params.q = search.value.trim()
+  const search = ref('');
+  const courses = ref<CourseWithSignedCover[]>([]);
+  const total = ref(0);
+  const page = ref(1);
+  const loading = ref(true);
+  const loadingMore = ref(false);
+  const error = ref<string | null>(null);
 
-    const res = await $fetch<PublicCoursesResponse>('/api/public/courses', { params })
+  const hasMore = computed(() => courses.value.length < total.value);
 
+  const sentinel = ref<HTMLElement | null>(null);
+
+  async function fetchCourses(reset = false) {
     if (reset) {
-      courses.value = res.courses
+      page.value = 1;
+      loading.value = true;
+      error.value = null;
+    } else {
+      loadingMore.value = true;
     }
-    else {
-      courses.value.push(...res.courses)
-    }
-    total.value = res.total
-  }
-  catch (err: any) {
-    error.value = err.data?.statusMessage || 'Failed to load courses'
-  }
-  finally {
-    loading.value = false
-    loadingMore.value = false
-  }
-}
 
-let searchTimer: ReturnType<typeof setTimeout> | null = null
-watch(search, () => {
-  if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => fetchCourses(true), 300)
-})
+    try {
+      const params: Record<string, string | number> = { page: reset ? 1 : page.value };
+      if (search.value.trim()) params.q = search.value.trim();
 
-onMounted(() => {
-  fetchCourses(true)
+      const res = await $fetch<PublicCoursesResponse>('/api/public/courses', { params });
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0]?.isIntersecting && hasMore.value && !loadingMore.value && !loading.value) {
-        page.value++
-        fetchCourses()
+      if (reset) {
+        courses.value = res.courses;
+      } else {
+        courses.value.push(...res.courses);
       }
-    },
-    { rootMargin: '200px' },
-  )
+      total.value = res.total;
+    } catch (err: any) {
+      error.value = err.data?.statusMessage || 'Failed to load courses';
+    } finally {
+      loading.value = false;
+      loadingMore.value = false;
+    }
+  }
 
-  watch(sentinel, (el) => {
-    if (el) observer.observe(el)
-  }, { immediate: true })
+  let searchTimer: ReturnType<typeof setTimeout> | null = null;
+  watch(search, () => {
+    if (searchTimer) clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => fetchCourses(true), 300);
+  });
 
-  onUnmounted(() => observer.disconnect())
-})
+  onMounted(() => {
+    fetchCourses(true);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore.value && !loadingMore.value && !loading.value) {
+          page.value++;
+          fetchCourses();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    watch(
+      sentinel,
+      (el) => {
+        if (el) observer.observe(el);
+      },
+      { immediate: true }
+    );
+
+    onUnmounted(() => observer.disconnect());
+  });
 </script>
 
 <template>
@@ -83,16 +83,14 @@ onMounted(() => {
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-xl font-semibold text-white">
         Public courses
-        <span v-if="!loading && total > 0" class="ml-2 text-sm font-normal text-slate-400">({{ total }})</span>
+        <span v-if="!loading && total > 0" class="ml-2 text-sm font-normal text-slate-400"
+          >({{ total }})</span
+        >
       </h2>
     </div>
 
     <div class="mb-4">
-      <UiInput
-        v-model="search"
-        placeholder="Search courses…"
-        type="search"
-      />
+      <UiInput v-model="search" placeholder="Search courses…" type="search" />
     </div>
 
     <p v-if="error" class="text-sm text-red-400 mb-4">
@@ -123,12 +121,7 @@ onMounted(() => {
         :title-to="`/dashboard/courses/${course.id}/learn`"
       >
         <template #actions>
-          <UiButton
-            :to="`/dashboard/courses/${course.id}/learn`"
-            :block="false"
-          >
-            Learn
-          </UiButton>
+          <UiButton :to="`/dashboard/courses/${course.id}/learn`" :block="false"> Learn </UiButton>
         </template>
       </CoursesCourseCard>
     </ul>

@@ -1,35 +1,38 @@
 <script setup lang="ts">
-import type { CourseWithSignedCover } from '@@/types/course'
+  import type { CourseWithSignedCover } from '@@/types/course';
 
-definePageMeta({ middleware: ['auth', 'role'] })
-useHead({ title: 'Dashboard · pdf2course' })
+  definePageMeta({ middleware: ['auth', 'role'] });
+  useHead({ title: 'Dashboard · pdf2course' });
 
-const { setBreadcrumbs } = useBreadcrumbs()
-setBreadcrumbs([
-  { label: 'Dashboard' }
-])
+  const { setBreadcrumbs } = useBreadcrumbs();
+  setBreadcrumbs([{ label: 'Dashboard' }]);
 
-const { data: courses, pending, error, refresh } = await useFetch<CourseWithSignedCover[]>('/api/courses', {
-  default: () => [],
-})
+  const {
+    data: courses,
+    pending,
+    error,
+    refresh
+  } = await useFetch<CourseWithSignedCover[]>('/api/courses', {
+    default: () => []
+  });
 
-async function deleteCourse(id: string) {
-  if (!confirm('Are you sure you want to delete this course?')) return
+  async function deleteCourse(id: string) {
+    if (!confirm('Are you sure you want to delete this course?')) return;
 
-  try {
-    await $fetch(`/api/courses/${id}`, { method: 'DELETE' } as any)
-    await refresh()
-  } catch (err: any) {
-    alert(err.data?.statusMessage || 'Failed to delete course')
+    try {
+      await $fetch(`/api/courses/${id}`, { method: 'DELETE' } as any);
+      await refresh();
+    } catch (err: any) {
+      alert(err.data?.statusMessage || 'Failed to delete course');
+    }
   }
-}
 
-const statusClass: Record<string, string> = {
-  draft: 'bg-slate-700 text-slate-300',
-  pending_review: 'bg-amber-900/50 text-amber-200',
-  approved: 'bg-emerald-900/50 text-emerald-200',
-  rejected: 'bg-red-900/50 text-red-200',
-}
+  const statusClass: Record<string, string> = {
+    draft: 'bg-slate-700 text-slate-300',
+    pending_review: 'bg-amber-900/50 text-amber-200',
+    approved: 'bg-emerald-900/50 text-emerald-200',
+    rejected: 'bg-red-900/50 text-red-200'
+  };
 </script>
 
 <template>
@@ -37,15 +40,8 @@ const statusClass: Record<string, string> = {
     <div class="max-w-4xl mx-auto px-4 py-8">
       <div class="mb-12">
         <div class="flex items-center justify-between mb-8">
-          <h1 class="text-2xl font-semibold text-white">
-            My courses
-          </h1>
-          <UiButton
-            to="/dashboard/courses/new"
-            :block="false"
-          >
-            New course
-          </UiButton>
+          <h1 class="text-2xl font-semibold text-white">My courses</h1>
+          <UiButton to="/dashboard/courses/new" :block="false"> New course </UiButton>
         </div>
 
         <p v-if="error" class="text-sm text-red-400 mb-4">
@@ -56,16 +52,12 @@ const statusClass: Record<string, string> = {
           <UiSpinner class="w-8 h-8 text-emerald-500" />
         </div>
 
-        <div v-else-if="!courses?.length" class="rounded-2xl border border-slate-800 bg-slate-900/80 p-8 text-center text-slate-400">
-          <p class="mb-4">
-            You don't have any courses yet.
-          </p>
-          <UiButton
-            to="/dashboard/courses/new"
-            :block="false"
-          >
-            Create your first course
-          </UiButton>
+        <div
+          v-else-if="!courses?.length"
+          class="rounded-2xl border border-slate-800 bg-slate-900/80 p-8 text-center text-slate-400"
+        >
+          <p class="mb-4">You don't have any courses yet.</p>
+          <UiButton to="/dashboard/courses/new" :block="false"> Create your first course </UiButton>
         </div>
 
         <ul v-else class="space-y-4">

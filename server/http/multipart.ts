@@ -1,61 +1,61 @@
-import { readMultipartFormData } from 'h3'
+import { readMultipartFormData } from 'h3';
 
 export interface MultipartFile {
-  data: Buffer
-  filename: string
-  type: string
+  data: Buffer;
+  filename: string;
+  type: string;
 }
 
 export interface MultipartResult {
-  fields: Record<string, string>
-  files: Record<string, MultipartFile>
+  fields: Record<string, string>;
+  files: Record<string, MultipartFile>;
 }
 
-type MultipartPart = { data: Buffer; name?: string; filename?: string; type?: string }
+type MultipartPart = { data: Buffer; name?: string; filename?: string; type?: string };
 
 export async function readMultipart(event: any): Promise<MultipartPart[] | undefined> {
-  return await readMultipartFormData(event)
+  return await readMultipartFormData(event);
 }
 
 export function parseMultipart(parts: MultipartPart[] | undefined): MultipartResult {
-  const fields: Record<string, string> = {}
-  const files: Record<string, MultipartFile> = {}
+  const fields: Record<string, string> = {};
+  const files: Record<string, MultipartFile> = {};
 
-  if (!parts) return { fields, files }
+  if (!parts) return { fields, files };
 
   for (const part of parts) {
-    const name = part.name?.toLowerCase()
-    if (!name || !part.data) continue
+    const name = part.name?.toLowerCase();
+    if (!name || !part.data) continue;
 
     if (part.filename) {
       files[name] = {
         data: part.data,
         filename: part.filename,
-        type: part.type ?? '',
-      }
-      continue
+        type: part.type ?? ''
+      };
+      continue;
     }
 
-    fields[name] = part.data.toString('utf-8')
+    fields[name] = part.data.toString('utf-8');
   }
 
-  return { fields, files }
+  return { fields, files };
 }
 
 export async function readCourseCreateMultipart(event: any) {
-  const parts = await readMultipart(event)
-  const { fields, files } = parseMultipart(parts)
+  const parts = await readMultipart(event);
+  const { fields, files } = parseMultipart(parts);
 
   // Extract multiple pdfs if they exist
-  const pdfs: MultipartFile[] = []
+  const pdfs: MultipartFile[] = [];
   if (parts) {
     for (const part of parts) {
       if (part.name?.toLowerCase() === 'pdfs' && part.filename && part.data) {
         pdfs.push({
           data: part.data,
           filename: part.filename,
-          type: part.type ?? '',
-        })
+          type: part.type ?? ''
+        });
       }
     }
   }
@@ -63,7 +63,6 @@ export async function readCourseCreateMultipart(event: any) {
   return {
     fields,
     cover: files.cover ?? null,
-    pdfs,
-  }
+    pdfs
+  };
 }
-

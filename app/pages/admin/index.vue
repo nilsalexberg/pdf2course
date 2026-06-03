@@ -1,49 +1,54 @@
 <script setup lang="ts">
-import type { CourseWithSignedCover } from '@@/types/course'
+  import type { CourseWithSignedCover } from '@@/types/course';
 
-definePageMeta({ middleware: ['auth', 'role'] })
-useHead({ title: 'Admin · pdf2course' })
+  definePageMeta({ middleware: ['auth', 'role'] });
+  useHead({ title: 'Admin · pdf2course' });
 
-const { setBreadcrumbs } = useBreadcrumbs()
-setBreadcrumbs([
-  { label: 'Admin' }
-])
+  const { setBreadcrumbs } = useBreadcrumbs();
+  setBreadcrumbs([{ label: 'Admin' }]);
 
-const { data: courses, pending, error, refresh } = await useFetch<CourseWithSignedCover[]>('/api/admin/courses', {
-  default: () => [],
-})
+  const {
+    data: courses,
+    pending,
+    error,
+    refresh
+  } = await useFetch<CourseWithSignedCover[]>('/api/admin/courses', {
+    default: () => []
+  });
 
-const rejectingId = ref<string | null>(null)
-const actionError = ref<string | null>(null)
+  const rejectingId = ref<string | null>(null);
+  const actionError = ref<string | null>(null);
 
-const pendingReview = computed(() => courses.value?.filter(c => c.status === 'pending_review') ?? [])
-const otherCourses = computed(() => courses.value?.filter(c => c.status !== 'pending_review') ?? [])
+  const pendingReview = computed(
+    () => courses.value?.filter((c) => c.status === 'pending_review') ?? []
+  );
+  const otherCourses = computed(
+    () => courses.value?.filter((c) => c.status !== 'pending_review') ?? []
+  );
 
-async function approve(id: string) {
-  actionError.value = null
-  try {
-    await $fetch(`/api/admin/courses/${id}/approve`, { method: 'POST' })
-    await refresh()
-  } catch (err: any) {
-    actionError.value = err.data?.statusMessage || 'Failed to approve course'
+  async function approve(id: string) {
+    actionError.value = null;
+    try {
+      await $fetch(`/api/admin/courses/${id}/approve`, { method: 'POST' });
+      await refresh();
+    } catch (err: any) {
+      actionError.value = err.data?.statusMessage || 'Failed to approve course';
+    }
   }
-}
 
-const statusClass: Record<string, string> = {
-  draft: 'bg-slate-700 text-slate-300',
-  pending_review: 'bg-amber-900/50 text-amber-200',
-  approved: 'bg-emerald-900/50 text-emerald-200',
-  rejected: 'bg-red-900/50 text-red-200',
-}
+  const statusClass: Record<string, string> = {
+    draft: 'bg-slate-700 text-slate-300',
+    pending_review: 'bg-amber-900/50 text-amber-200',
+    approved: 'bg-emerald-900/50 text-emerald-200',
+    rejected: 'bg-red-900/50 text-red-200'
+  };
 </script>
 
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-50">
     <div class="max-w-5xl mx-auto px-4 py-8">
       <div class="flex items-center justify-between mb-8">
-        <h1 class="text-2xl font-semibold text-white">
-          Admin — Courses
-        </h1>
+        <h1 class="text-2xl font-semibold text-white">Admin — Courses</h1>
       </div>
 
       <p v-if="error" class="text-sm text-red-400 mb-4">
@@ -62,7 +67,9 @@ const statusClass: Record<string, string> = {
         <section class="mb-10">
           <h2 class="text-lg font-semibold text-amber-300 mb-4">
             Pending review
-            <span class="ml-2 text-sm font-normal text-slate-400">({{ pendingReview.length }})</span>
+            <span class="ml-2 text-sm font-normal text-slate-400"
+              >({{ pendingReview.length }})</span
+            >
           </h2>
 
           <div
@@ -154,10 +161,6 @@ const statusClass: Record<string, string> = {
     </div>
 
     <!-- Reject modal -->
-    <AdminRejectModal
-      :course-id="rejectingId"
-      @close="rejectingId = null"
-      @rejected="refresh"
-    />
+    <AdminRejectModal :course-id="rejectingId" @close="rejectingId = null" @rejected="refresh" />
   </div>
 </template>

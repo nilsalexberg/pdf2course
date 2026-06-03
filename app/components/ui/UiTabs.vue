@@ -1,12 +1,12 @@
 <script setup lang="ts">
-defineProps<{
-  tabs: { key: string; label: string }[]
-  modelValue: string
-}>()
+  defineProps<{
+    tabs: { key: string; label: string }[];
+    modelValue: string;
+  }>();
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string]
-}>()
+  const emit = defineEmits<{
+    'update:modelValue': [value: string];
+  }>();
 </script>
 
 <template>
@@ -17,9 +17,11 @@ const emit = defineEmits<{
         :key="tab.key"
         type="button"
         class="px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px"
-        :class="modelValue === tab.key
-          ? 'border-emerald-500 text-emerald-400'
-          : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-700'"
+        :class="
+          modelValue === tab.key
+            ? 'border-emerald-500 text-emerald-400'
+            : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-700'
+        "
         @click="emit('update:modelValue', tab.key)"
       >
         {{ tab.label }}

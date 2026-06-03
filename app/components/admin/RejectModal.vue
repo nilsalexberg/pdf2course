@@ -1,41 +1,44 @@
 <script setup lang="ts">
-const props = defineProps<{
-  courseId: string | null
-}>()
+  const props = defineProps<{
+    courseId: string | null;
+  }>();
 
-const emit = defineEmits<{
-  close: []
-  rejected: []
-}>()
+  const emit = defineEmits<{
+    close: [];
+    rejected: [];
+  }>();
 
-const rejectReason = ref('')
-const loading = ref(false)
-const error = ref<string | null>(null)
+  const rejectReason = ref('');
+  const loading = ref(false);
+  const error = ref<string | null>(null);
 
-watch(() => props.courseId, (val) => {
-  if (val) {
-    rejectReason.value = ''
-    error.value = null
+  watch(
+    () => props.courseId,
+    (val) => {
+      if (val) {
+        rejectReason.value = '';
+        error.value = null;
+      }
+    }
+  );
+
+  async function confirm() {
+    if (!props.courseId) return;
+    error.value = null;
+    loading.value = true;
+    try {
+      await $fetch(`/api/admin/courses/${props.courseId}/reject`, {
+        method: 'POST',
+        body: { reason: rejectReason.value }
+      });
+      emit('rejected');
+      emit('close');
+    } catch (err: any) {
+      error.value = err.data?.statusMessage || 'Failed to reject course';
+    } finally {
+      loading.value = false;
+    }
   }
-})
-
-async function confirm() {
-  if (!props.courseId) return
-  error.value = null
-  loading.value = true
-  try {
-    await $fetch(`/api/admin/courses/${props.courseId}/reject`, {
-      method: 'POST',
-      body: { reason: rejectReason.value },
-    })
-    emit('rejected')
-    emit('close')
-  } catch (err: any) {
-    error.value = err.data?.statusMessage || 'Failed to reject course'
-  } finally {
-    loading.value = false
-  }
-}
 </script>
 
 <template>
@@ -45,9 +48,7 @@ async function confirm() {
     @click.self="emit('close')"
   >
     <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md">
-      <h3 class="text-lg font-semibold text-white mb-4">
-        Reject course
-      </h3>
+      <h3 class="text-lg font-semibold text-white mb-4">Reject course</h3>
       <UiTextarea
         v-model="rejectReason"
         placeholder="Explain why this course is being rejected..."
@@ -58,12 +59,7 @@ async function confirm() {
         {{ error }}
       </p>
       <div class="flex gap-3 justify-end">
-        <UiButton
-          variant="secondary"
-          :block="false"
-          :disabled="loading"
-          @click="emit('close')"
-        >
+        <UiButton variant="secondary" :block="false" :disabled="loading" @click="emit('close')">
           Cancel
         </UiButton>
         <UiButton

@@ -31,6 +31,7 @@
 ## 🛠 Prerequisites
 
 Before you begin, ensure you have:
+
 - [Node.js](https://nodejs.org/) (latest LTS recommended)
 - [pnpm](https://pnpm.io/) installed (`npm install -g pnpm`)
 - A [Redis](https://redis.io/) instance running (local or cloud)
@@ -42,6 +43,7 @@ Before you begin, ensure you have:
 ## 🏗 Setup Guide
 
 ### 1. Clone & Install
+
 ```bash
 git clone <your-repo-url>
 cd pdf2course
@@ -49,17 +51,22 @@ pnpm install
 ```
 
 ### 2. Environment Variables
+
 Copy `.env.example` to `.env` and fill in the required values:
+
 ```bash
 cp .env.example .env
 ```
+
 Key variables:
+
 - `SUPABASE_URL` / `SUPABASE_KEY`: Your project credentials.
 - `REDIS_URL`: Connection string for BullMQ (e.g., `redis://localhost:6379`).
 - `GEMINI_API_KEY`: Your Google AI Studio key.
 - `SITE_URL`: Set to `http://localhost:3000` for development.
 
 ### 3. Supabase Configuration
+
 1.  **Migrations**: Run the SQL scripts found in `supabase/migrations/` in your Supabase SQL Editor.
 2.  **Storage**: Create two **private** buckets:
     - `course-covers`: For course thumbnail images.
@@ -67,9 +74,11 @@ Key variables:
 3.  **RLS**: Ensure Row Level Security is enabled. The migrations include initial policies, but double-check them in the dashboard.
 
 ### 4. Running the Project
+
 ```bash
 pnpm dev
 ```
+
 The application will start at `http://localhost:3000`. The background worker for course generation starts automatically as a Nitro plugin.
 
 ---
@@ -86,10 +95,10 @@ The application will start at `http://localhost:3000`. The background worker for
 ## 📐 Architecture
 
 The project follows a **Layered Architecture** within the `server/` directory:
+
 - **API Handlers**: Thin wrappers for requests/validation.
 - **Services**: Business logic and orchestration (Gemini, Storage).
 - **Repositories**: Direct data access using Supabase client.
 - **Workers**: Asynchronous processing using BullMQ.
 
 Refer to [STYLE_GUIDE.md](./STYLE_GUIDE.md) for detailed coding standards.
-

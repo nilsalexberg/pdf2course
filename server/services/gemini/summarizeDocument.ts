@@ -1,7 +1,7 @@
-import type { DocumentSummary } from '../../../types/course'
-import { getGeminiClient } from './geminiClient'
+import type { DocumentSummary } from '../../../types/course';
+import { getGeminiClient } from './geminiClient';
 
-const SUMMARIZE_MODEL = 'gemini-2.5-flash'
+const SUMMARIZE_MODEL = 'gemini-2.5-flash';
 
 const SYSTEM_PROMPT = `Você é um designer instrucional sênior com experiência em mapear a ementa de materiais didáticos.
 Abaixo está o texto bruto e completo extraído de um documento/PDF.
@@ -31,27 +31,27 @@ ESTRUTURA JSON DESEJADA:
 
 Texto bruto do arquivo para analisar:
 ===================================
-`
+`;
 
 /**
  * Sends the full extracted text of a PDF to Gemini and returns a structured
  * DocumentSummary (knowledge taxonomy) suitable for course structure generation.
  */
 export async function summarizeDocument(extractedText: string): Promise<DocumentSummary> {
-  const ai = getGeminiClient()
+  const ai = getGeminiClient();
 
   const response = await ai.models.generateContent({
     model: SUMMARIZE_MODEL,
     contents: `${SYSTEM_PROMPT}${extractedText}\n===================================`,
     config: {
-      responseMimeType: 'application/json',
-    },
-  })
+      responseMimeType: 'application/json'
+    }
+  });
 
-  const raw = response.text
+  const raw = response.text;
   if (!raw) {
-    throw new Error('Gemini returned an empty response for document summarization')
+    throw new Error('Gemini returned an empty response for document summarization');
   }
 
-  return JSON.parse(raw) as DocumentSummary
+  return JSON.parse(raw) as DocumentSummary;
 }

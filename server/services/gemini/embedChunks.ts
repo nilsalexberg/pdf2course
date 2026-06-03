@@ -1,23 +1,23 @@
-import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai'
+import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
 
-const EMBEDDING_MODEL = 'gemini-embedding-001'
+const EMBEDDING_MODEL = 'gemini-embedding-001';
 // Gemini embedContent accepts up to 100 texts per request
-export const EMBED_BATCH_SIZE = 100
+export const EMBED_BATCH_SIZE = 100;
 
-let _embedder: GoogleGenerativeAIEmbeddings | null = null
+let _embedder: GoogleGenerativeAIEmbeddings | null = null;
 
 function getEmbedder(): GoogleGenerativeAIEmbeddings {
   if (!_embedder) {
-    const apiKey = process.env.GEMINI_API_KEY
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error('GEMINI_API_KEY environment variable is not set')
+      throw new Error('GEMINI_API_KEY environment variable is not set');
     }
     _embedder = new GoogleGenerativeAIEmbeddings({
       model: EMBEDDING_MODEL,
-      apiKey,
-    })
+      apiKey
+    });
   }
-  return _embedder
+  return _embedder;
 }
 
 /**
@@ -26,8 +26,8 @@ function getEmbedder(): GoogleGenerativeAIEmbeddings {
  * Returns one 3072-dim vector per input, in the same order.
  */
 export async function embedBatch(texts: string[]): Promise<number[][]> {
-  if (texts.length === 0) return []
+  if (texts.length === 0) return [];
 
-  const embedder = getEmbedder()
-  return embedder.embedDocuments(texts)
+  const embedder = getEmbedder();
+  return embedder.embedDocuments(texts);
 }

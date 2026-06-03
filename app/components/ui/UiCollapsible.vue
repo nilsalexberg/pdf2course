@@ -1,7 +1,7 @@
 <script setup lang="ts">
-defineProps<{ label: string }>()
+  defineProps<{ label: string }>();
 
-const open = ref(false)
+  const open = ref(false);
 </script>
 
 <template>

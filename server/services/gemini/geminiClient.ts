@@ -1,6 +1,6 @@
-import { GoogleGenAI } from '@google/genai'
+import { GoogleGenAI } from '@google/genai';
 
-let _client: GoogleGenAI | null = null
+let _client: GoogleGenAI | null = null;
 
 /**
  * Returns a lazily-initialised, process-scoped Gemini client.
@@ -8,11 +8,11 @@ let _client: GoogleGenAI | null = null
  */
 export function getGeminiClient(): GoogleGenAI {
   if (!_client) {
-    const apiKey = process.env.GEMINI_API_KEY
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error('GEMINI_API_KEY environment variable is not set')
+      throw new Error('GEMINI_API_KEY environment variable is not set');
     }
-    _client = new GoogleGenAI({ apiKey })
+    _client = new GoogleGenAI({ apiKey });
   }
-  return _client
+  return _client;
 }

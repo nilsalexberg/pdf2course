@@ -1,18 +1,20 @@
 <script setup lang="ts">
-defineProps<{
-  id?: string
-  label?: string
-  placeholder?: string
-  rows?: number | string
-  required?: boolean
-}>()
+  defineProps<{
+    id?: string;
+    label?: string;
+    placeholder?: string;
+    rows?: number | string;
+    required?: boolean;
+  }>();
 
-const model = defineModel<string>()
+  const model = defineModel<string>();
 </script>
 
 <template>
   <div>
-    <label v-if="label" class="block text-sm font-medium text-slate-200 mb-1" :for="id || label">{{ label }}</label>
+    <label v-if="label" class="block text-sm font-medium text-slate-200 mb-1" :for="id || label">{{
+      label
+    }}</label>
     <textarea
       :id="id"
       v-model="model"

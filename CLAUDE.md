@@ -65,8 +65,10 @@ Storage buckets: `course-covers` (5MB max, jpeg/png/webp) and `course-pdfs` (50M
 # Project Requirements
 
 ## Quick Context (Always Read First)
+
 At the start of every task, read `/PRD_SUMMARY.md` to understand the project's goals, scope, stack, and global constraints.
 
 ## Rules
+
 - Never assume requirements — always ground your decisions in the PRD
 - If a request conflicts with the PRD, flag it before proceeding

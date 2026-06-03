@@ -1,17 +1,17 @@
 export interface BreadcrumbItem {
-  label: string
-  to?: string
+  label: string;
+  to?: string;
 }
 
 export const useBreadcrumbs = () => {
-  const breadcrumbs = useState<BreadcrumbItem[]>('breadcrumbs', () => [])
+  const breadcrumbs = useState<BreadcrumbItem[]>('breadcrumbs', () => []);
 
   const setBreadcrumbs = (items: BreadcrumbItem[]) => {
-    breadcrumbs.value = items
-  }
+    breadcrumbs.value = items;
+  };
 
   return {
     breadcrumbs,
-    setBreadcrumbs,
-  }
-}
+    setBreadcrumbs
+  };
+};

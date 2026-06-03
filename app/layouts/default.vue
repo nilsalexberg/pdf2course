@@ -1,5 +1,7 @@
 <template>
-  <div class="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-400">
+  <div
+    class="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-400"
+  >
     <!-- Main Top Navigation -->
     <UiNavbar />
 

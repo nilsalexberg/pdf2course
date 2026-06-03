@@ -1,16 +1,16 @@
-import { z } from 'zod'
-import { getGeminiClient } from './geminiClient'
-import { embedBatch } from './embedChunks'
-import { semanticSearchChunks } from '../../repositories/courseRepo'
-import type { Lesson, LessonContent } from '../../../types/course'
-import type { CourseConfig } from '../../../types/course'
+import { z } from 'zod';
+import { getGeminiClient } from './geminiClient';
+import { embedBatch } from './embedChunks';
+import { semanticSearchChunks } from '../../repositories/courseRepo';
+import type { Lesson, LessonContent } from '../../../types/course';
+import type { CourseConfig } from '../../../types/course';
 
-const CONTENT_MODEL = 'gemini-2.5-flash'
+const CONTENT_MODEL = 'gemini-2.5-flash';
 // Chunks retrieved per rag_search_query
-const CHUNKS_PER_QUERY = 5
+const CHUNKS_PER_QUERY = 5;
 // Max total context chunks after deduplication
-const MAX_CONTEXT_CHUNKS = 12
-const MAX_RETRIES = 3
+const MAX_CONTEXT_CHUNKS = 12;
+const MAX_RETRIES = 3;
 
 // ─── Zod schemas ─────────────────────────────────────────────────────────────
 
@@ -19,82 +19,82 @@ const multipleChoiceSchema = z.object({
   question: z.string(),
   options: z.array(z.string()).min(2).max(4),
   correct_index: z.number().int().min(0).max(3),
-  explanation: z.string(),
-})
+  explanation: z.string()
+});
 
 const trueFalseSchema = z.object({
   type: z.literal('true_false'),
   statement: z.string(),
   is_true: z.boolean(),
-  explanation: z.string(),
-})
+  explanation: z.string()
+});
 
 const fillBlankSchema = z.object({
   type: z.literal('fill_blank'),
   sentence: z.string(),
   answer: z.string(),
-  explanation: z.string(),
-})
+  explanation: z.string()
+});
 
 const exerciseSchema = z.discriminatedUnion('type', [
   multipleChoiceSchema,
   trueFalseSchema,
-  fillBlankSchema,
-])
+  fillBlankSchema
+]);
 
 const lessonSectionSchema = z.object({
   type: z.literal('section'),
   title: z.string(),
-  content: z.string(),
-})
+  content: z.string()
+});
 
 const lessonStepSchema = z.discriminatedUnion('type', [
   lessonSectionSchema,
   multipleChoiceSchema,
   trueFalseSchema,
-  fillBlankSchema,
-])
+  fillBlankSchema
+]);
 
 const lessonContentSchema = z.object({
   introduction: z.string(),
   steps: z.array(lessonStepSchema).min(6),
-  summary: z.string(),
-})
+  summary: z.string()
+});
 
 // ─── Context retrieval via RAG ────────────────────────────────────────────────
 
 async function retrieveContext(
-  lesson: Lesson,
+  lesson: Lesson
 ): Promise<Array<{ id: string; content: string; similarity: number }>> {
-  const MIN_QUERIES = 3
+  const MIN_QUERIES = 3;
 
-  let queries = lesson.key_topics
+  let queries = lesson.key_topics;
 
   if (queries.length < MIN_QUERIES) {
-    queries = [...queries, ...lesson.learning_objectives]
+    queries = [...queries, ...lesson.learning_objectives];
   }
 
   if (queries.length < MIN_QUERIES) {
-    queries = [...queries, lesson.title]
+    queries = [...queries, lesson.title];
   }
 
   // Embed all search queries in a single batch call
-  const embeddings = await embedBatch(queries)
+  const embeddings = await embedBatch(queries);
 
   // Search for similar chunks for each query
   const results = await Promise.all(
     embeddings.map((embedding) =>
-      semanticSearchChunks(lesson.course_id, embedding, CHUNKS_PER_QUERY),
-    ),
-  )
+      semanticSearchChunks(lesson.course_id, embedding, CHUNKS_PER_QUERY)
+    )
+  );
 
   // Deduplicate by chunk id, keeping the highest similarity score
-  const seen = new Map<string, { id: string; content: string; similarity: number }>()
+  const seen = new Map<string, { id: string; content: string; similarity: number }>();
   for (const batch of results) {
     for (const chunk of batch) {
-      const existing = seen.get(chunk.id)
+      const existing = seen.get(chunk.id);
       if (!existing || chunk.similarity > existing.similarity) {
-        seen.set(chunk.id, chunk)
+        seen.set(chunk.id, chunk);
       }
     }
   }
@@ -102,7 +102,7 @@ async function retrieveContext(
   // Sort by similarity descending and cap at MAX_CONTEXT_CHUNKS
   return Array.from(seen.values())
     .sort((a, b) => b.similarity - a.similarity)
-    .slice(0, MAX_CONTEXT_CHUNKS)
+    .slice(0, MAX_CONTEXT_CHUNKS);
 }
 
 // ─── Prompt builder ───────────────────────────────────────────────────────────
@@ -110,23 +110,25 @@ async function retrieveContext(
 function buildPrompt(
   lesson: Lesson,
   config: CourseConfig,
-  contextChunks: Array<{ content: string; similarity: number }>,
+  contextChunks: Array<{ content: string; similarity: number }>
 ): string {
-  const language = config.language ?? 'English'
-  const level = config.language_level ?? 'Standard'
-  const tone = config.tone ?? 'Standard'
+  const language = config.language ?? 'English';
+  const level = config.language_level ?? 'Standard';
+  const tone = config.tone ?? 'Standard';
 
-  const objectivesList = lesson.learning_objectives
-    .map((o, i) => `  ${i + 1}. ${o}`)
-    .join('\n')
+  const objectivesList = lesson.learning_objectives.map((o, i) => `  ${i + 1}. ${o}`).join('\n');
 
-  const topicsList = lesson.key_topics.join(', ')
+  const topicsList = lesson.key_topics.join(', ');
 
-  const contextText = contextChunks.length > 0
-    ? contextChunks
-      .map((c, i) => `### Source extract ${i + 1} (relevance: ${(c.similarity * 100).toFixed(0)}%)\n${c.content}`)
-      .join('\n\n')
-    : 'No specific source material retrieved — generate content based on the lesson objectives and topics.'
+  const contextText =
+    contextChunks.length > 0
+      ? contextChunks
+          .map(
+            (c, i) =>
+              `### Source extract ${i + 1} (relevance: ${(c.similarity * 100).toFixed(0)}%)\n${c.content}`
+          )
+          .join('\n\n')
+      : 'No specific source material retrieved — generate content based on the lesson objectives and topics.';
 
   return `You are a Senior Instructional Designer creating engaging lesson content for an online course.
 
@@ -198,7 +200,7 @@ Create dynamic, engaging lesson content grounded in the source material above. P
     }
   ],
   "summary": "One consolidating paragraph..."
-}`
+}`;
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
@@ -209,38 +211,35 @@ Create dynamic, engaging lesson content grounded in the source material above. P
  */
 export async function generateLessonContent(
   lesson: Lesson,
-  config: CourseConfig,
+  config: CourseConfig
 ): Promise<LessonContent> {
-  const contextChunks = await retrieveContext(lesson)
-  const prompt = buildPrompt(lesson, config, contextChunks)
-  const ai = getGeminiClient()
+  const contextChunks = await retrieveContext(lesson);
+  const prompt = buildPrompt(lesson, config, contextChunks);
+  const ai = getGeminiClient();
 
-  let lastError: unknown
+  let lastError: unknown;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const response = await ai.models.generateContent({
         model: CONTENT_MODEL,
         contents: prompt,
-        config: { responseMimeType: 'application/json' },
-      })
+        config: { responseMimeType: 'application/json' }
+      });
 
-      const raw = response.text
+      const raw = response.text;
       if (!raw) {
-        throw new Error('Gemini returned an empty response for lesson content generation')
+        throw new Error('Gemini returned an empty response for lesson content generation');
       }
 
-      const parsed = lessonContentSchema.parse(JSON.parse(raw))
-      return parsed as LessonContent
-    }
-    catch (err) {
-      lastError = err
-      const message = err instanceof Error ? err.message : String(err)
-      console.warn(
-        `[generateLessonContent] Attempt ${attempt}/${MAX_RETRIES} failed: ${message}`,
-      )
+      const parsed = lessonContentSchema.parse(JSON.parse(raw));
+      return parsed as LessonContent;
+    } catch (err) {
+      lastError = err;
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn(`[generateLessonContent] Attempt ${attempt}/${MAX_RETRIES} failed: ${message}`);
     }
   }
 
-  throw lastError
+  throw lastError;
 }

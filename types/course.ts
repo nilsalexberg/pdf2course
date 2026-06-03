@@ -1,164 +1,176 @@
-export type CourseStatus = 'draft' | 'pending_review' | 'approved' | 'rejected'
+export type CourseStatus = 'draft' | 'pending_review' | 'approved' | 'rejected';
 
-export type GenerationStatus = 'idle' | 'processing' | 'embedding' | 'summarizing' | 'generating_structure' | 'ready' | 'failed'
+export type GenerationStatus =
+  | 'idle'
+  | 'processing'
+  | 'embedding'
+  | 'summarizing'
+  | 'generating_structure'
+  | 'ready'
+  | 'failed';
 
-export const GENERATION_IN_PROGRESS: GenerationStatus[] = ['processing', 'embedding', 'summarizing', 'generating_structure']
+export const GENERATION_IN_PROGRESS: GenerationStatus[] = [
+  'processing',
+  'embedding',
+  'summarizing',
+  'generating_structure'
+];
 
-import type { CourseLanguageLevel, CourseFocus, CourseLanguage, CourseTone } from './courseConfig'
+import type { CourseLanguageLevel, CourseFocus, CourseLanguage, CourseTone } from './courseConfig';
 
 export interface CourseConfig {
-  num_modules?: number
-  lessons_per_module?: number
-  language_level?: CourseLanguageLevel
-  focus?: CourseFocus
-  language?: CourseLanguage
-  tone?: CourseTone
-  chunk_size?: number
-  chunk_overlap?: number
+  num_modules?: number;
+  lessons_per_module?: number;
+  language_level?: CourseLanguageLevel;
+  focus?: CourseFocus;
+  language?: CourseLanguage;
+  tone?: CourseTone;
+  chunk_size?: number;
+  chunk_overlap?: number;
 }
 
 export interface Course {
-  id: string
-  producer_id: string
-  title: string
-  description: string | null
-  cover_url: string | null
-  status: CourseStatus
-  rejection_reason: string | null
-  generation_status: GenerationStatus
-  generation_error: string | null
-  config: CourseConfig
-  generated_at: string | null
-  created_at: string
-  updated_at: string
+  id: string;
+  producer_id: string;
+  title: string;
+  description: string | null;
+  cover_url: string | null;
+  status: CourseStatus;
+  rejection_reason: string | null;
+  generation_status: GenerationStatus;
+  generation_error: string | null;
+  config: CourseConfig;
+  generated_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CourseWithSignedCover extends Course {
-  cover_url_signed: string | null
+  cover_url_signed: string | null;
 }
 
 export interface DocumentSummaryTopic {
-  topic_title: string
-  key_concepts: string[]
-  learning_objectives: string[]
+  topic_title: string;
+  key_concepts: string[];
+  learning_objectives: string[];
 }
 
 export interface DocumentSummary {
-  document_title: string
-  core_themes: string[]
-  estimated_target_difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
-  target_audience: string
-  structural_outline: DocumentSummaryTopic[]
+  document_title: string;
+  core_themes: string[];
+  estimated_target_difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  target_audience: string;
+  structural_outline: DocumentSummaryTopic[];
 }
 
 export interface CoursePdf {
-  id: string
-  course_id: string
-  file_path: string
-  filename: string
-  size_bytes: number
-  extracted_text: string | null
-  ai_summary: DocumentSummary | null
-  created_at: string
-  updated_at: string
+  id: string;
+  course_id: string;
+  file_path: string;
+  filename: string;
+  size_bytes: number;
+  extracted_text: string | null;
+  ai_summary: DocumentSummary | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CoursePdfWithSignedUrl extends CoursePdf {
-  url_signed: string
+  url_signed: string;
 }
 
 export interface DocumentChunk {
-  id: string
-  course_id: string
-  course_pdf_id: string
-  chunk_index: number
-  content: string
-  embedding: number[] | null
-  created_at: string
+  id: string;
+  course_id: string;
+  course_pdf_id: string;
+  chunk_index: number;
+  content: string;
+  embedding: number[] | null;
+  created_at: string;
 }
 
 export interface Module {
-  id: string
-  course_id: string
-  module_number: number
-  title: string
-  description: string
-  created_at: string
+  id: string;
+  course_id: string;
+  module_number: number;
+  title: string;
+  description: string;
+  created_at: string;
 }
 
-export type LessonStatus = 'not_generated' | 'generating' | 'ready' | 'failed'
+export type LessonStatus = 'not_generated' | 'generating' | 'ready' | 'failed';
 
 // ─── Lesson content types ──────────────────────────────────────────────────
 
 export interface LessonSection {
-  type: 'section'
-  title: string
-  content: string
+  type: 'section';
+  title: string;
+  content: string;
 }
 
-export type LessonStep = LessonSection | Exercise
+export type LessonStep = LessonSection | Exercise;
 
 export interface MultipleChoiceExercise {
-  type: 'multiple_choice'
-  question: string
-  options: string[]
-  correct_index: number
-  explanation: string
+  type: 'multiple_choice';
+  question: string;
+  options: string[];
+  correct_index: number;
+  explanation: string;
 }
 
 export interface TrueFalseExercise {
-  type: 'true_false'
-  statement: string
-  is_true: boolean
-  explanation: string
+  type: 'true_false';
+  statement: string;
+  is_true: boolean;
+  explanation: string;
 }
 
 export interface FillBlankExercise {
-  type: 'fill_blank'
-  sentence: string
-  answer: string
-  explanation: string
+  type: 'fill_blank';
+  sentence: string;
+  answer: string;
+  explanation: string;
 }
 
-export type Exercise = MultipleChoiceExercise | TrueFalseExercise | FillBlankExercise
+export type Exercise = MultipleChoiceExercise | TrueFalseExercise | FillBlankExercise;
 
 export interface LessonContent {
-  introduction: string
-  steps: LessonStep[]
-  summary: string
+  introduction: string;
+  steps: LessonStep[];
+  summary: string;
 }
 
 // ──────────────────────────────────────────────────────────────────────────
 
 export interface Lesson {
-  id: string
-  module_id: string
-  course_id: string
-  lesson_number: number
-  title: string
-  description: string
-  learning_objectives: string[]
-  key_topics: string[]
-  status: LessonStatus
-  content: LessonContent | null
-  generation_error: string | null
-  created_at: string
+  id: string;
+  module_id: string;
+  course_id: string;
+  lesson_number: number;
+  title: string;
+  description: string;
+  learning_objectives: string[];
+  key_topics: string[];
+  status: LessonStatus;
+  content: LessonContent | null;
+  generation_error: string | null;
+  created_at: string;
 }
 
 export interface ModuleWithLessons extends Module {
-  lessons: Lesson[]
+  lessons: Lesson[];
 }
 
 export interface CourseStructure {
-  course_title: string
-  modules: ModuleWithLessons[]
+  course_title: string;
+  modules: ModuleWithLessons[];
 }
 
 export interface LessonCompletion {
-  id: string
-  user_id: string
-  lesson_id: string
-  course_id: string
-  score_percent: number
-  completed_at: string
+  id: string;
+  user_id: string;
+  lesson_id: string;
+  course_id: string;
+  score_percent: number;
+  completed_at: string;
 }

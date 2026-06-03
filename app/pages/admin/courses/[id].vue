@@ -1,81 +1,99 @@
 <script setup lang="ts">
-import type { CourseWithSignedCover, ModuleWithLessons } from '@@/types/course'
-import { COURSE_LANGUAGE_LEVELS, COURSE_FOCUS_OPTIONS, COURSE_LANGUAGES, COURSE_TONES, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP } from '@@/types/courseConfig'
+  import type { CourseWithSignedCover, ModuleWithLessons } from '@@/types/course';
+  import {
+    COURSE_LANGUAGE_LEVELS,
+    COURSE_FOCUS_OPTIONS,
+    COURSE_LANGUAGES,
+    COURSE_TONES,
+    DEFAULT_CHUNK_SIZE,
+    DEFAULT_CHUNK_OVERLAP
+  } from '@@/types/courseConfig';
 
-definePageMeta({ middleware: ['auth', 'role'] })
-useHead({ title: 'Course Detail · Admin · pdf2course' })
+  definePageMeta({ middleware: ['auth', 'role'] });
+  useHead({ title: 'Course Detail · Admin · pdf2course' });
 
-const route = useRoute()
-const id = route.params.id as string
+  const route = useRoute();
+  const id = route.params.id as string;
 
-const { data: course, pending: coursePending, error: courseError, refresh: refreshCourse } = await useFetch<CourseWithSignedCover>(`/api/admin/courses/${id}`)
-const { data: modules, pending: modulesPending } = useFetch<ModuleWithLessons[]>(`/api/admin/courses/${id}/structure`, { default: () => [] })
+  const {
+    data: course,
+    pending: coursePending,
+    error: courseError,
+    refresh: refreshCourse
+  } = await useFetch<CourseWithSignedCover>(`/api/admin/courses/${id}`);
+  const { data: modules, pending: modulesPending } = useFetch<ModuleWithLessons[]>(
+    `/api/admin/courses/${id}/structure`,
+    { default: () => [] }
+  );
 
-const { setBreadcrumbs } = useBreadcrumbs()
-watch(course as any, (c: CourseWithSignedCover | null) => {
-  setBreadcrumbs([
-    { label: 'Admin', to: '/admin' },
-    { label: c?.title || 'Course' }
-  ])
-}, { immediate: true })
+  const { setBreadcrumbs } = useBreadcrumbs();
+  watch(
+    course as any,
+    (c: CourseWithSignedCover | null) => {
+      setBreadcrumbs([{ label: 'Admin', to: '/admin' }, { label: c?.title || 'Course' }]);
+    },
+    { immediate: true }
+  );
 
-const rejectingId = ref<string | null>(null)
-const rejectReason = ref('')
-const actionError = ref<string | null>(null)
+  const rejectingId = ref<string | null>(null);
+  const rejectReason = ref('');
+  const actionError = ref<string | null>(null);
 
-async function approve() {
-  actionError.value = null
-  try {
-    await $fetch(`/api/admin/courses/${id}/approve`, { method: 'POST' })
-    await refreshCourse()
-  } catch (err: any) {
-    actionError.value = err.data?.statusMessage || 'Failed to approve course'
+  async function approve() {
+    actionError.value = null;
+    try {
+      await $fetch(`/api/admin/courses/${id}/approve`, { method: 'POST' });
+      await refreshCourse();
+    } catch (err: any) {
+      actionError.value = err.data?.statusMessage || 'Failed to approve course';
+    }
   }
-}
 
-function openReject() {
-  rejectingId.value = id
-  rejectReason.value = ''
-  actionError.value = null
-}
-
-async function confirmReject() {
-  actionError.value = null
-  try {
-    await $fetch(`/api/admin/courses/${id}/reject`, {
-      method: 'POST',
-      body: { reason: rejectReason.value },
-    })
-    rejectingId.value = null
-    rejectReason.value = ''
-    await refreshCourse()
-  } catch (err: any) {
-    actionError.value = err.data?.statusMessage || 'Failed to reject course'
+  function openReject() {
+    rejectingId.value = id;
+    rejectReason.value = '';
+    actionError.value = null;
   }
-}
 
-const settingsNumModules = computed(() => course.value?.config?.num_modules ?? 5)
-const settingsLessonsPerModule = computed(() => course.value?.config?.lessons_per_module ?? 4)
-const settingsLanguageLevel = computed(() => course.value?.config?.language_level ?? COURSE_LANGUAGE_LEVELS[0])
-const settingsFocus = computed(() => course.value?.config?.focus ?? COURSE_FOCUS_OPTIONS[0])
-const settingsLanguage = computed(() => course.value?.config?.language ?? COURSE_LANGUAGES[0])
-const settingsTone = computed(() => course.value?.config?.tone ?? COURSE_TONES[0])
-const settingsChunkSize = computed(() => course.value?.config?.chunk_size ?? DEFAULT_CHUNK_SIZE)
-const settingsChunkOverlap = computed(() => course.value?.config?.chunk_overlap ?? DEFAULT_CHUNK_OVERLAP)
+  async function confirmReject() {
+    actionError.value = null;
+    try {
+      await $fetch(`/api/admin/courses/${id}/reject`, {
+        method: 'POST',
+        body: { reason: rejectReason.value }
+      });
+      rejectingId.value = null;
+      rejectReason.value = '';
+      await refreshCourse();
+    } catch (err: any) {
+      actionError.value = err.data?.statusMessage || 'Failed to reject course';
+    }
+  }
 
-const statusClass: Record<string, string> = {
-  draft: 'bg-slate-700 text-slate-300',
-  pending_review: 'bg-amber-900/50 text-amber-200',
-  approved: 'bg-emerald-900/50 text-emerald-200',
-  rejected: 'bg-red-900/50 text-red-200',
-}
+  const settingsNumModules = computed(() => course.value?.config?.num_modules ?? 5);
+  const settingsLessonsPerModule = computed(() => course.value?.config?.lessons_per_module ?? 4);
+  const settingsLanguageLevel = computed(
+    () => course.value?.config?.language_level ?? COURSE_LANGUAGE_LEVELS[0]
+  );
+  const settingsFocus = computed(() => course.value?.config?.focus ?? COURSE_FOCUS_OPTIONS[0]);
+  const settingsLanguage = computed(() => course.value?.config?.language ?? COURSE_LANGUAGES[0]);
+  const settingsTone = computed(() => course.value?.config?.tone ?? COURSE_TONES[0]);
+  const settingsChunkSize = computed(() => course.value?.config?.chunk_size ?? DEFAULT_CHUNK_SIZE);
+  const settingsChunkOverlap = computed(
+    () => course.value?.config?.chunk_overlap ?? DEFAULT_CHUNK_OVERLAP
+  );
 
+  const statusClass: Record<string, string> = {
+    draft: 'bg-slate-700 text-slate-300',
+    pending_review: 'bg-amber-900/50 text-amber-200',
+    approved: 'bg-emerald-900/50 text-emerald-200',
+    rejected: 'bg-red-900/50 text-red-200'
+  };
 </script>
 
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-50">
     <div class="max-w-4xl mx-auto px-4 py-8">
-
       <div v-if="coursePending" class="flex justify-center py-16">
         <UiSpinner class="w-8 h-8 text-emerald-500" />
       </div>
@@ -88,8 +106,15 @@ const statusClass: Record<string, string> = {
         <!-- Course header -->
         <div class="rounded-2xl border border-slate-800 bg-slate-900/80 overflow-hidden mb-6">
           <div class="flex gap-6 p-6">
-            <div v-if="course.cover_url_signed" class="w-32 shrink-0 rounded-xl overflow-hidden bg-slate-800">
-              <img :src="course.cover_url_signed" :alt="course.title" class="w-full aspect-square object-cover">
+            <div
+              v-if="course.cover_url_signed"
+              class="w-32 shrink-0 rounded-xl overflow-hidden bg-slate-800"
+            >
+              <img
+                :src="course.cover_url_signed"
+                :alt="course.title"
+                class="w-full aspect-square object-cover"
+              />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-start justify-between gap-4">
@@ -120,15 +145,21 @@ const statusClass: Record<string, string> = {
           </div>
 
           <!-- Actions -->
-          <div v-if="course.status !== 'draft'" class="border-t border-slate-800 px-6 py-4 flex items-center gap-3">
+          <div
+            v-if="course.status !== 'draft'"
+            class="border-t border-slate-800 px-6 py-4 flex items-center gap-3"
+          >
             <p v-if="actionError" class="text-sm text-red-400 flex-1">
               {{ actionError }}
             </p>
             <template v-if="course.status === 'pending_review'">
-              <UiButton :block="false" @click="approve">
-                Approve
-              </UiButton>
-              <UiButton variant="ghost" :block="false" class="text-red-400 hover:text-red-300 hover:bg-red-950/20" @click="openReject">
+              <UiButton :block="false" @click="approve"> Approve </UiButton>
+              <UiButton
+                variant="ghost"
+                :block="false"
+                class="text-red-400 hover:text-red-300 hover:bg-red-950/20"
+                @click="openReject"
+              >
                 Reject
               </UiButton>
             </template>
@@ -138,18 +169,14 @@ const statusClass: Record<string, string> = {
               </UiButton>
             </template>
             <template v-else-if="course.status === 'rejected'">
-              <UiButton :block="false" @click="approve">
-                Approve anyway
-              </UiButton>
+              <UiButton :block="false" @click="approve"> Approve anyway </UiButton>
             </template>
           </div>
         </div>
 
         <!-- Source PDFs -->
         <section class="mb-6">
-          <h2 class="text-lg font-semibold text-slate-300 mb-3">
-            Source PDFs
-          </h2>
+          <h2 class="text-lg font-semibold text-slate-300 mb-3">Source PDFs</h2>
           <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
             <CoursesSourcePdfs :course-id="id" readonly />
           </div>
@@ -157,9 +184,7 @@ const statusClass: Record<string, string> = {
 
         <!-- Generation settings -->
         <section class="mb-6">
-          <h2 class="text-lg font-semibold text-slate-300 mb-3">
-            Generation settings
-          </h2>
+          <h2 class="text-lg font-semibold text-slate-300 mb-3">Generation settings</h2>
           <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
             <CoursesSettingsFields
               readonly
@@ -177,9 +202,7 @@ const statusClass: Record<string, string> = {
 
         <!-- Generated structure -->
         <section>
-          <h2 class="text-lg font-semibold text-slate-300 mb-3">
-            Generated structure
-          </h2>
+          <h2 class="text-lg font-semibold text-slate-300 mb-3">Generated structure</h2>
 
           <div v-if="modulesPending" class="flex justify-center py-8">
             <UiSpinner class="w-6 h-6 text-emerald-500" />
@@ -204,9 +227,7 @@ const statusClass: Record<string, string> = {
       @click.self="rejectingId = null"
     >
       <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md">
-        <h3 class="text-lg font-semibold text-white mb-4">
-          Reject course
-        </h3>
+        <h3 class="text-lg font-semibold text-white mb-4">Reject course</h3>
         <UiTextarea
           v-model="rejectReason"
           placeholder="Explain why this course is being rejected..."

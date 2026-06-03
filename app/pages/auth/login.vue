@@ -1,53 +1,51 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'blank' })
-useHead({ title: 'Login · pdf2course' })
+  definePageMeta({ layout: 'blank' });
+  useHead({ title: 'Login · pdf2course' });
 
-const { $authClient } = useNuxtApp()
-const authUser = useState<any>('authUser')
-const router = useRouter()
+  const { $authClient } = useNuxtApp();
+  const authUser = useState<any>('authUser');
+  const router = useRouter();
 
-const email = ref('')
-const password = ref('')
-const loading = ref(false)
-const errorMessage = ref<string | null>(null)
+  const email = ref('');
+  const password = ref('');
+  const loading = ref(false);
+  const errorMessage = ref<string | null>(null);
 
-const route = useRoute()
-const redirect = computed(() => (route.query.redirect as string | undefined) ?? '/dashboard')
+  const route = useRoute();
+  const redirect = computed(() => (route.query.redirect as string | undefined) ?? '/dashboard');
 
-watch(
-  authUser,
-  (u) => {
-    if (u) {
-      router.replace(redirect.value)
+  watch(
+    authUser,
+    (u) => {
+      if (u) {
+        router.replace(redirect.value);
+      }
+    },
+    { immediate: true }
+  );
+
+  async function handleEmailLogin() {
+    loading.value = true;
+    errorMessage.value = null;
+    try {
+      const { data, error } = await $authClient.signIn.email({
+        email: email.value,
+        password: password.value
+      });
+      if (error) throw error;
+      authUser.value = data?.user ?? null;
+    } catch (err: any) {
+      errorMessage.value = err?.message ?? 'Error logging in.';
+    } finally {
+      loading.value = false;
     }
-  },
-  { immediate: true },
-)
-
-async function handleEmailLogin() {
-  loading.value = true
-  errorMessage.value = null
-  try {
-    const { data, error } = await $authClient.signIn.email({
-      email: email.value,
-      password: password.value,
-    })
-    if (error) throw error
-    authUser.value = data?.user ?? null
-  } catch (err: any) {
-    errorMessage.value = err?.message ?? 'Error logging in.'
-  } finally {
-    loading.value = false
   }
-}
 </script>
 
 <template>
   <div class="min-h-screen flex items-center justify-center bg-slate-950">
     <div class="w-full max-w-md bg-slate-900/80 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-      <h1 class="text-2xl font-semibold text-white mb-6 text-center">
-        Log in to pdf2course
-      </h1>
+      <h1 class="text-2xl font-semibold text-white mb-6 text-center">Log in to pdf2course</h1>
 
       <form class="space-y-4" @submit.prevent="handleEmailLogin">
         <UiInput
@@ -68,13 +66,7 @@ async function handleEmailLogin() {
           required
         />
 
-        <UiButton
-          type="submit"
-          :loading="loading"
-        >
-          Log in
-        </UiButton>
-
+        <UiButton type="submit" :loading="loading"> Log in </UiButton>
       </form>
 
       <p v-if="errorMessage" class="mt-4 text-sm text-red-400">
@@ -82,9 +74,7 @@ async function handleEmailLogin() {
       </p>
 
       <div class="mt-6 flex items-center justify-between text-xs text-slate-400">
-        <NuxtLink to="/auth/register" class="hover:text-emerald-400">
-          Create account
-        </NuxtLink>
+        <NuxtLink to="/auth/register" class="hover:text-emerald-400"> Create account </NuxtLink>
         <NuxtLink to="/auth/forgot-password" class="hover:text-emerald-400">
           Forgot my password
         </NuxtLink>
@@ -92,4 +82,3 @@ async function handleEmailLogin() {
     </div>
   </div>
 </template>
-

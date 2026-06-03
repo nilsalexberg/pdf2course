@@ -1,4 +1,4 @@
-import type { Config } from 'tailwindcss'
+import type { Config } from 'tailwindcss';
 
 export default <Partial<Config>>{
   content: [
@@ -8,11 +8,10 @@ export default <Partial<Config>>{
     './components/**/*.{vue,js,ts}',
     './layouts/**/*.{vue,js,ts}',
     './composables/**/*.{js,ts}',
-    './plugins/**/*.{js,ts}',
+    './plugins/**/*.{js,ts}'
   ],
   theme: {
-    extend: {},
+    extend: {}
   },
-  plugins: [],
-}
-
+  plugins: []
+};

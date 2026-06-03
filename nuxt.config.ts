@@ -8,7 +8,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
     public: {
-      siteUrl: process.env.SITE_URL,
-    },
-  },
-})
+      siteUrl: process.env.SITE_URL
+    }
+  }
+});

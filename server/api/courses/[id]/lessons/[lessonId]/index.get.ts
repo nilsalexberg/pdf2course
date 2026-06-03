@@ -1,29 +1,29 @@
-import { z } from 'zod'
-import { requireUser } from '../../../../../auth/requireUser'
-import { requireRole } from '../../../../../auth/requireRole'
-import { getCourseById, getLessonById } from '../../../../../repositories/courseRepo'
-import type { Lesson } from '../../../../../../types/course'
+import { z } from 'zod';
+import { requireUser } from '../../../../../auth/requireUser';
+import { requireRole } from '../../../../../auth/requireRole';
+import { getCourseById, getLessonById } from '../../../../../repositories/courseRepo';
+import type { Lesson } from '../../../../../../types/course';
 
 const paramsSchema = z.object({
   id: z.string().min(1),
-  lessonId: z.string().min(1),
-})
+  lessonId: z.string().min(1)
+});
 
 export default defineEventHandler(async (event): Promise<Lesson> => {
-  const user = await requireUser(event)
-  await requireRole(event, user.id)
+  const user = await requireUser(event);
+  await requireRole(event, user.id);
 
-  const { id: courseId, lessonId } = await getValidatedRouterParams(event, paramsSchema.parse)
+  const { id: courseId, lessonId } = await getValidatedRouterParams(event, paramsSchema.parse);
 
-  const course = await getCourseById(courseId)
+  const course = await getCourseById(courseId);
   if (course.producer_id !== user.id) {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+    throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
   }
 
-  const lesson = await getLessonById(lessonId)
+  const lesson = await getLessonById(lessonId);
   if (lesson.course_id !== courseId) {
-    throw createError({ statusCode: 404, statusMessage: 'Lesson not found' })
+    throw createError({ statusCode: 404, statusMessage: 'Lesson not found' });
   }
 
-  return lesson
-})
+  return lesson;
+});
