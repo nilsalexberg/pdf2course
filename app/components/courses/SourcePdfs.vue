@@ -91,7 +91,7 @@
               {{ pdf.filename }}
             </p>
             <p class="text-xs text-slate-500">
-              {{ formatSize(pdf.size_bytes) }}
+              {{ formatSize(pdf.sizeBytes) }}
             </p>
           </div>
 

@@ -19,83 +19,83 @@ export const GENERATION_IN_PROGRESS: GenerationStatus[] = [
 import type { CourseLanguageLevel, CourseFocus, CourseLanguage, CourseTone } from './courseConfig';
 
 export interface CourseConfig {
-  num_modules?: number;
-  lessons_per_module?: number;
-  language_level?: CourseLanguageLevel;
+  numModules?: number;
+  lessonsPerModule?: number;
+  languageLevel?: CourseLanguageLevel;
   focus?: CourseFocus;
   language?: CourseLanguage;
   tone?: CourseTone;
-  chunk_size?: number;
-  chunk_overlap?: number;
+  chunkSize?: number;
+  chunkOverlap?: number;
 }
 
 export interface Course {
   id: string;
-  producer_id: string;
+  producerId: string;
   title: string;
   description: string | null;
-  cover_url: string | null;
+  coverUrl: string | null;
   status: CourseStatus;
-  rejection_reason: string | null;
-  generation_status: GenerationStatus;
-  generation_error: string | null;
+  rejectionReason: string | null;
+  generationStatus: GenerationStatus;
+  generationError: string | null;
   config: CourseConfig;
-  generated_at: string | null;
-  created_at: string;
-  updated_at: string;
+  generatedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CourseWithSignedCover extends Course {
-  cover_url_signed: string | null;
+  coverUrlSigned: string | null;
 }
 
 export interface DocumentSummaryTopic {
-  topic_title: string;
-  key_concepts: string[];
-  learning_objectives: string[];
+  topicTitle: string;
+  keyConcepts: string[];
+  learningObjectives: string[];
 }
 
 export interface DocumentSummary {
-  document_title: string;
-  core_themes: string[];
-  estimated_target_difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  target_audience: string;
-  structural_outline: DocumentSummaryTopic[];
+  documentTitle: string;
+  coreThemes: string[];
+  estimatedTargetDifficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  targetAudience: string;
+  structuralOutline: DocumentSummaryTopic[];
 }
 
 export interface CoursePdf {
   id: string;
-  course_id: string;
-  file_path: string;
+  courseId: string;
+  filePath: string;
   filename: string;
-  size_bytes: number;
-  extracted_text: string | null;
-  ai_summary: DocumentSummary | null;
-  created_at: string;
-  updated_at: string;
+  sizeBytes: number;
+  extractedText: string | null;
+  aiSummary: DocumentSummary | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CoursePdfWithSignedUrl extends CoursePdf {
-  url_signed: string;
+  urlSigned: string;
 }
 
 export interface DocumentChunk {
   id: string;
-  course_id: string;
-  course_pdf_id: string;
-  chunk_index: number;
+  courseId: string;
+  coursePdfId: string;
+  chunkIndex: number;
   content: string;
   embedding: number[] | null;
-  created_at: string;
+  createdAt: string;
 }
 
 export interface Module {
   id: string;
-  course_id: string;
-  module_number: number;
+  courseId: string;
+  moduleNumber: number;
   title: string;
   description: string;
-  created_at: string;
+  createdAt: string;
 }
 
 export type LessonStatus = 'not_generated' | 'generating' | 'ready' | 'failed';
@@ -114,14 +114,14 @@ export interface MultipleChoiceExercise {
   type: 'multiple_choice';
   question: string;
   options: string[];
-  correct_index: number;
+  correctIndex: number;
   explanation: string;
 }
 
 export interface TrueFalseExercise {
   type: 'true_false';
   statement: string;
-  is_true: boolean;
+  isTrue: boolean;
   explanation: string;
 }
 
@@ -144,17 +144,17 @@ export interface LessonContent {
 
 export interface Lesson {
   id: string;
-  module_id: string;
-  course_id: string;
-  lesson_number: number;
+  moduleId: string;
+  courseId: string;
+  lessonNumber: number;
   title: string;
   description: string;
-  learning_objectives: string[];
-  key_topics: string[];
+  learningObjectives: string[];
+  keyTopics: string[];
   status: LessonStatus;
   content: LessonContent | null;
-  generation_error: string | null;
-  created_at: string;
+  generationError: string | null;
+  createdAt: string;
 }
 
 export interface ModuleWithLessons extends Module {
@@ -162,15 +162,15 @@ export interface ModuleWithLessons extends Module {
 }
 
 export interface CourseStructure {
-  course_title: string;
+  courseTitle: string;
   modules: ModuleWithLessons[];
 }
 
 export interface LessonCompletion {
   id: string;
-  user_id: string;
-  lesson_id: string;
-  course_id: string;
-  score_percent: number;
-  completed_at: string;
+  userId: string;
+  lessonId: string;
+  courseId: string;
+  scorePercent: number;
+  completedAt: string;
 }

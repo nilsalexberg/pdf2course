@@ -1,5 +1,5 @@
 import {
-  COURSE_LANGUAGE_LEVELS,
+  COURSE_languageLevelS,
   COURSE_FOCUS_OPTIONS,
   COURSE_LANGUAGES,
   COURSE_TONES,
@@ -15,7 +15,7 @@ export function useCourseForm() {
   const description = ref('');
   const numModules = ref(5);
   const lessonsPerModule = ref(4);
-  const languageLevel = ref<string>(COURSE_LANGUAGE_LEVELS[0]);
+  const languageLevel = ref<string>(COURSE_languageLevelS[0]);
   const focus = ref<string>(COURSE_FOCUS_OPTIONS[0]);
   const language = ref<string>(COURSE_LANGUAGES[0]);
   const tone = ref<string>(COURSE_TONES[0]);
@@ -51,28 +51,28 @@ export function useCourseForm() {
   function fillForm(course: CourseWithSignedCover) {
     title.value = course.title;
     description.value = course.description || '';
-    numModules.value = course.config?.num_modules ?? 5;
-    lessonsPerModule.value = course.config?.lessons_per_module ?? 4;
-    languageLevel.value = course.config?.language_level ?? COURSE_LANGUAGE_LEVELS[0];
+    numModules.value = course.config?.numModules ?? 5;
+    lessonsPerModule.value = course.config?.lessonsPerModule ?? 4;
+    languageLevel.value = course.config?.languageLevel ?? COURSE_languageLevelS[0];
     focus.value = course.config?.focus ?? COURSE_FOCUS_OPTIONS[0];
     language.value = course.config?.language ?? COURSE_LANGUAGES[0];
     tone.value = course.config?.tone ?? COURSE_TONES[0];
-    chunkSize.value = course.config?.chunk_size ?? DEFAULT_CHUNK_SIZE;
-    chunkOverlap.value = course.config?.chunk_overlap ?? DEFAULT_CHUNK_OVERLAP;
+    chunkSize.value = course.config?.chunkSize ?? DEFAULT_CHUNK_SIZE;
+    chunkOverlap.value = course.config?.chunkOverlap ?? DEFAULT_CHUNK_OVERLAP;
   }
 
   function buildFormData(extra?: (fd: FormData) => void): FormData {
     const fd = new FormData();
     fd.set('title', title.value.trim());
     fd.set('description', description.value.trim());
-    fd.set('num_modules', String(numModules.value));
-    fd.set('lessons_per_module', String(lessonsPerModule.value));
-    fd.set('language_level', languageLevel.value);
+    fd.set('numModules', String(numModules.value));
+    fd.set('lessonsPerModule', String(lessonsPerModule.value));
+    fd.set('languageLevel', languageLevel.value);
     fd.set('focus', focus.value);
     fd.set('language', language.value);
     fd.set('tone', tone.value);
-    if (chunkSize.value != null) fd.set('chunk_size', String(chunkSize.value));
-    if (chunkOverlap.value != null) fd.set('chunk_overlap', String(chunkOverlap.value));
+    if (chunkSize.value != null) fd.set('chunkSize', String(chunkSize.value));
+    if (chunkOverlap.value != null) fd.set('chunkOverlap', String(chunkOverlap.value));
     if (coverFile.value) fd.set('cover', coverFile.value);
     extra?.(fd);
     return fd;

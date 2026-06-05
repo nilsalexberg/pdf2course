@@ -10,11 +10,11 @@ export default defineEventHandler(async (event): Promise<Course> => {
   const id = getRouterParam(event, 'id')!;
   const course = await getCourseById(id);
 
-  if (course.producer_id !== user.id) {
+  if (course.producerId !== user.id) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
   }
 
-  if (course.generation_status !== 'ready') {
+  if (course.generationStatus !== 'ready') {
     throw createError({
       statusCode: 422,
       statusMessage: 'Course structure must be fully generated before submitting for review.'

@@ -13,12 +13,12 @@ export default defineEventHandler(async (event): Promise<CourseStructure> => {
   }
 
   const course = await getCourseById(id);
-  if (course.producer_id !== user.id) {
+  if (course.producerId !== user.id) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
   }
 
   return {
-    course_title: course.title,
+    courseTitle: course.title,
     modules: await listModulesWithLessons(id)
   };
 });

@@ -7,8 +7,8 @@ import type { Lesson } from '../../../../../../types/course';
 const bodySchema = z.object({
   title: z.string().min(1),
   description: z.string(),
-  learning_objectives: z.array(z.string()),
-  key_topics: z.array(z.string())
+  learningObjectives: z.array(z.string()),
+  keyTopics: z.array(z.string())
 });
 
 export default defineEventHandler(async (event): Promise<Lesson> => {
@@ -22,12 +22,12 @@ export default defineEventHandler(async (event): Promise<Lesson> => {
   }
 
   const course = await getCourseById(id);
-  if (course.producer_id !== user.id) {
+  if (course.producerId !== user.id) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
   }
 
   const lesson = await getLessonById(lessonId);
-  if (lesson.course_id !== id) {
+  if (lesson.courseId !== id) {
     throw createError({ statusCode: 404, statusMessage: 'Lesson not found' });
   }
 

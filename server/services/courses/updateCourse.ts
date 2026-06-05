@@ -30,14 +30,14 @@ export async function updateCourse(
   }
 
   // Security check: ensure the user owns the course
-  if (course.producer_id !== userId) {
+  if (course.producerId !== userId) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
   }
 
   const config = {
-    num_modules: input.num_modules,
-    lessons_per_module: input.lessons_per_module,
-    language_level: input.language_level,
+    numModules: input.numModules,
+    lessonsPerModule: input.lessonsPerModule,
+    languageLevel: input.languageLevel,
     focus: input.focus,
     language: input.language,
     tone: input.tone
@@ -53,9 +53,9 @@ export async function updateCourse(
     validateCoverFile(coverFile);
 
     // If there's an old cover, delete it
-    if (course.cover_url) {
+    if (course.coverUrl) {
       try {
-        await deleteCourseCover(course.cover_url);
+        await deleteCourseCover(course.coverUrl);
       } catch (err) {
         // Ignore if old cover is missing
       }
@@ -67,7 +67,7 @@ export async function updateCourse(
 
     // Update the return object path
     if (updatedCourse) {
-      updatedCourse.cover_url = coverPath;
+      updatedCourse.coverUrl = coverPath;
     }
   }
 
@@ -76,10 +76,10 @@ export async function updateCourse(
     const pdfPath = buildPdfPath(userId, courseId, pdf.filename);
     await uploadCoursePdf(pdfPath, pdf);
     await insertCoursePdf({
-      course_id: courseId,
-      file_path: pdfPath,
+      courseId: courseId,
+      filePath: pdfPath,
       filename: pdf.filename,
-      size_bytes: pdf.data.length
+      sizeBytes: pdf.data.length
     });
   }
 

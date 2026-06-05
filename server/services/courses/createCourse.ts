@@ -20,19 +20,19 @@ export async function createCourse(
   }
 
   const config = {
-    num_modules: input.num_modules,
-    lessons_per_module: input.lessons_per_module,
-    language_level: input.language_level,
+    numModules: input.numModules,
+    lessonsPerModule: input.lessonsPerModule,
+    languageLevel: input.languageLevel,
     focus: input.focus,
     language: input.language,
     tone: input.tone
   };
 
   const course = await insertCourse({
-    producer_id: userId,
+    producerId: userId,
     title: input.title,
     description: input.description,
-    cover_url: null,
+    coverUrl: null,
     config
   });
 
@@ -50,15 +50,15 @@ export async function createCourse(
     const path = buildPdfPath(userId, course.id, pdf.filename);
     await uploadCoursePdf(path, pdf);
     await insertCoursePdf({
-      course_id: course.id,
-      file_path: path,
+      courseId: course.id,
+      filePath: path,
       filename: pdf.filename,
-      size_bytes: pdf.data.length
+      sizeBytes: pdf.data.length
     });
   }
 
   return {
     ...course,
-    cover_url: coverFile ? buildCoverPath(userId, course.id, coverFile.filename) : null
+    coverUrl: coverFile ? buildCoverPath(userId, course.id, coverFile.filename) : null
   };
 }

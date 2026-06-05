@@ -50,7 +50,7 @@
           class="inline-flex items-center justify-center w-10 h-10 rounded-xl text-sm font-bold ring-1 shrink-0"
           :class="moduleBadgeColor(modIndex)"
         >
-          {{ mod.module_number }}
+          {{ mod.moduleNumber }}
         </span>
         <div class="min-w-0 pt-0.5">
           <h2 class="text-lg font-semibold text-white leading-snug">

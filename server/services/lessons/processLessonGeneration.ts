@@ -24,11 +24,11 @@ export async function processLessonGeneration(
   const course = await getCourseById(courseId);
   if (!course) throw createError({ statusCode: 404, statusMessage: 'Course not found' });
 
-  if (course.producer_id !== userId) {
+  if (course.producerId !== userId) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
   }
 
-  if (course.generation_status !== 'ready') {
+  if (course.generationStatus !== 'ready') {
     throw createError({
       statusCode: 400,
       statusMessage: 'Course structure must be fully generated before generating lesson content'
@@ -38,7 +38,7 @@ export async function processLessonGeneration(
   // ─── Fetch lesson and verify it belongs to this course ──────────────────────
   const lesson = await getLessonById(lessonId);
 
-  if (lesson.course_id !== courseId) {
+  if (lesson.courseId !== courseId) {
     throw createError({ statusCode: 404, statusMessage: 'Lesson not found' });
   }
 

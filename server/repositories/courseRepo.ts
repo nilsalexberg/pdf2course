@@ -36,19 +36,19 @@ export async function listCoursesByProducerId(producerId: string): Promise<Cours
 }
 
 export async function insertCourse(input: {
-  producer_id: string;
+  producerId: string;
   title: string;
   description: string | null;
-  cover_url: string | null;
+  coverUrl: string | null;
   config: any;
 }): Promise<Course | null> {
   const result = await db
     .insert(courses)
     .values({
-      producerId: input.producer_id,
+      producerId: input.producerId,
       title: input.title,
       description: input.description,
-      coverUrl: input.cover_url,
+      coverUrl: input.coverUrl,
       config: input.config
     })
     .returning();
@@ -161,16 +161,16 @@ export async function updateCourseGeneratedAt(courseId: string): Promise<void> {
 // ─── course_pdfs ──────────────────────────────────────────────────────────────
 
 export async function insertCoursePdf(input: {
-  course_id: string;
-  file_path: string;
+  courseId: string;
+  filePath: string;
   filename: string;
-  size_bytes: number;
+  sizeBytes: number;
 }): Promise<void> {
   await db.insert(coursePdfs).values({
-    courseId: input.course_id,
-    filePath: input.file_path,
+    courseId: input.courseId,
+    filePath: input.filePath,
     filename: input.filename,
-    sizeBytes: input.size_bytes
+    sizeBytes: input.sizeBytes
   });
 }
 
@@ -219,16 +219,16 @@ export async function deleteDocumentChunksByPdfId(coursePdfId: string): Promise<
 const CHUNK_INSERT_BATCH_SIZE = 100;
 
 export async function insertDocumentChunks(
-  chunks: Array<{ course_id: string; course_pdf_id: string; chunk_index: number; content: string }>
+  chunks: Array<{ courseId: string; coursePdfId: string; chunkIndex: number; content: string }>
 ): Promise<void> {
   if (chunks.length === 0) return;
   for (let i = 0; i < chunks.length; i += CHUNK_INSERT_BATCH_SIZE) {
     const batch = chunks.slice(i, i + CHUNK_INSERT_BATCH_SIZE);
     await db.insert(documentChunks).values(
       batch.map((c) => ({
-        courseId: c.course_id,
-        coursePdfId: c.course_pdf_id,
-        chunkIndex: c.chunk_index,
+        courseId: c.courseId,
+        coursePdfId: c.coursePdfId,
+        chunkIndex: c.chunkIndex,
         content: c.content
       }))
     );
@@ -243,12 +243,12 @@ export async function listDocumentChunksByCourseId(courseId: string): Promise<Do
     .orderBy(asc(documentChunks.chunkIndex));
   return rows.map((r) => ({
     id: r.id,
-    course_id: r.courseId,
-    course_pdf_id: r.coursePdfId,
-    chunk_index: r.chunkIndex,
+    courseId: r.courseId,
+    coursePdfId: r.coursePdfId,
+    chunkIndex: r.chunkIndex,
     content: r.content,
     embedding: null,
-    created_at: r.createdAt.toISOString()
+    createdAt: r.createdAt.toISOString()
   })) as DocumentChunk[];
 }
 
@@ -284,14 +284,14 @@ export async function deleteCourseModules(courseId: string): Promise<void> {
 }
 
 export async function insertModules(
-  rows: Array<{ course_id: string; module_number: number; title: string; description: string }>
+  rows: Array<{ courseId: string; moduleNumber: number; title: string; description: string }>
 ): Promise<Module[]> {
   const result = await db
     .insert(modules)
     .values(
       rows.map((r) => ({
-        courseId: r.course_id,
-        moduleNumber: r.module_number,
+        courseId: r.courseId,
+        moduleNumber: r.moduleNumber,
         title: r.title,
         description: r.description
       }))
@@ -302,13 +302,13 @@ export async function insertModules(
 
 export async function insertLessons(
   rows: Array<{
-    module_id: string;
-    course_id: string;
-    lesson_number: number;
+    moduleId: string;
+    courseId: string;
+    lessonNumber: number;
     title: string;
     description: string;
-    learning_objectives: string[];
-    key_topics: string[];
+    learningObjectives: string[];
+    keyTopics: string[];
   }>
 ): Promise<void> {
   if (rows.length === 0) return;
@@ -354,15 +354,15 @@ export async function getLessonById(lessonId: string): Promise<Lesson> {
 
 export async function updateLesson(
   lessonId: string,
-  input: { title: string; description: string; learning_objectives: string[]; key_topics: string[] }
+  input: { title: string; description: string; learningObjectives: string[]; keyTopics: string[] }
 ): Promise<Lesson> {
   const result = await db
     .update(lessons)
     .set({
       title: input.title,
       description: input.description,
-      learningObjectives: input.learning_objectives,
-      keyTopics: input.key_topics
+      learningObjectives: input.learningObjectives,
+      keyTopics: input.keyTopics
     })
     .where(eq(lessons.id, lessonId))
     .returning();
@@ -410,23 +410,23 @@ export async function listLessonCompletionsByCourse(
 }
 
 export async function upsertLessonCompletion(input: {
-  user_id: string;
-  lesson_id: string;
-  course_id: string;
-  score_percent: number;
+  userId: string;
+  lessonId: string;
+  courseId: string;
+  scorePercent: number;
 }): Promise<LessonCompletion> {
   const result = await db
     .insert(lessonCompletions)
     .values({
-      userId: input.user_id,
-      lessonId: input.lesson_id,
-      courseId: input.course_id,
-      scorePercent: input.score_percent,
+      userId: input.userId,
+      lessonId: input.lessonId,
+      courseId: input.courseId,
+      scorePercent: input.scorePercent,
       completedAt: new Date()
     })
     .onConflictDoUpdate({
       target: [lessonCompletions.userId, lessonCompletions.lessonId],
-      set: { scorePercent: input.score_percent, completedAt: new Date() }
+      set: { scorePercent: input.scorePercent, completedAt: new Date() }
     })
     .returning();
   return result[0];

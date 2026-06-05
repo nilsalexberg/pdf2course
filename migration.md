@@ -38,7 +38,7 @@ Isto se aplica principalmente de `generateCourseStructure.ts` e `generateLessonC
 
 ### Etapa 3: Abstração do fluxo Supabase RAG (Opcional, porém recomendada)
 
-Em `generateLessonContent.ts` (linhas 67~108), há fragmentos que quebram `key_topics` + `learning_objectives` em múltiplas buscas e iteram o embedding para recuperar via repositório.
+Em `generateLessonContent.ts` (linhas 67~108), há fragmentos que quebram `keyTopics` + `learningObjectives` em múltiplas buscas e iteram o embedding para recuperar via repositório.
 **Caminho com LangChain:**
 
 - Instanciar a classe `@langchain/community/vectorstores/supabase` `SupabaseVectorStore`.

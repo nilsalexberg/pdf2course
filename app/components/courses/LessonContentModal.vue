@@ -40,7 +40,7 @@
     saveError.value = null;
     try {
       const updated = await $fetch<Lesson>(
-        `/api/courses/${props.lesson.course_id}/lessons/${props.lesson.id}/content`,
+        `/api/courses/${props.lesson.courseId}/lessons/${props.lesson.id}/content`,
         { method: 'PATCH', body: draft.value }
       );
       emit('update:lesson', updated);
@@ -82,7 +82,7 @@
       <div class="flex items-start justify-between gap-4 px-6 py-5 border-b border-slate-800">
         <div>
           <p class="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-0.5">
-            Lesson {{ lesson.lesson_number }}
+            Lesson {{ lesson.lessonNumber }}
           </p>
           <h2 class="text-lg font-semibold text-white leading-snug">
             {{ lesson.title }}
@@ -199,12 +199,12 @@
                       type="button"
                       class="w-7 h-7 rounded-full border text-xs font-bold shrink-0 transition-colors"
                       :class="
-                        step.correct_index === oi
+                        step.correctIndex === oi
                           ? 'bg-emerald-600 border-emerald-500 text-white'
                           : 'bg-slate-800 border-slate-600 text-slate-400 hover:border-emerald-600'
                       "
-                      :title="step.correct_index === oi ? 'Correct answer' : 'Set as correct'"
-                      @click="step.correct_index = oi"
+                      :title="step.correctIndex === oi ? 'Correct answer' : 'Set as correct'"
+                      @click="step.correctIndex = oi"
                     >
                       {{ OPTION_LABELS[oi] }}
                     </button>
@@ -231,13 +231,13 @@
                     :key="oi"
                     class="text-sm flex items-center gap-2"
                     :class="
-                      step.correct_index === oi ? 'text-emerald-400 font-medium' : 'text-slate-400'
+                      step.correctIndex === oi ? 'text-emerald-400 font-medium' : 'text-slate-400'
                     "
                   >
                     <span class="font-semibold w-4 shrink-0">{{ OPTION_LABELS[oi] }}.</span>
                     {{ opt }}
                     <svg
-                      v-if="step.correct_index === oi"
+                      v-if="step.correctIndex === oi"
                       class="w-3.5 h-3.5 shrink-0"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -266,11 +266,11 @@
                     type="button"
                     class="flex-1 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors"
                     :class="
-                      step.is_true
+                      step.isTrue
                         ? 'bg-emerald-900/40 border-emerald-600 text-emerald-300'
                         : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-emerald-600'
                     "
-                    @click="step.is_true = true"
+                    @click="step.isTrue = true"
                   >
                     True
                   </button>
@@ -278,11 +278,11 @@
                     type="button"
                     class="flex-1 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors"
                     :class="
-                      !step.is_true
+                      !step.isTrue
                         ? 'bg-red-900/40 border-red-600 text-red-300'
                         : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-red-600'
                     "
-                    @click="step.is_true = false"
+                    @click="step.isTrue = false"
                   >
                     False
                   </button>
@@ -299,12 +299,12 @@
                 <span
                   class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold"
                   :class="
-                    step.is_true
+                    step.isTrue
                       ? 'bg-emerald-900/40 text-emerald-300'
                       : 'bg-red-900/40 text-red-300'
                   "
                 >
-                  {{ step.is_true ? 'True' : 'False' }}
+                  {{ step.isTrue ? 'True' : 'False' }}
                 </span>
                 <p class="text-xs text-slate-500 italic">{{ step.explanation }}</p>
               </template>

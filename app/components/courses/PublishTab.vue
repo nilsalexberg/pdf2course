@@ -16,10 +16,10 @@
   const submittingReview = ref(false);
   const errorMessage = ref<string | null>(null);
 
-  const isReady = computed(() => props.course?.generation_status === 'ready');
+  const isReady = computed(() => props.course?.generationStatus === 'ready');
   const isGenerationInProgress = computed(() =>
-    props.course?.generation_status
-      ? GENERATION_IN_PROGRESS.includes(props.course.generation_status)
+    props.course?.generationStatus
+      ? GENERATION_IN_PROGRESS.includes(props.course.generationStatus)
       : false
   );
 
@@ -118,7 +118,7 @@
 
       <div class="flex items-center gap-3">
         <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Status</span>
-        <CoursesGenerationStatus :status="course?.generation_status ?? 'idle'" />
+        <CoursesGenerationStatus :status="course?.generationStatus ?? 'idle'" />
       </div>
 
       <div class="flex flex-wrap gap-3">
@@ -172,8 +172,8 @@
         </div>
       </div>
 
-      <p v-if="course?.generation_error" class="text-xs text-red-400">
-        {{ course.generation_error }}
+      <p v-if="course?.generationError" class="text-xs text-red-400">
+        {{ course.generationError }}
       </p>
     </div>
 
@@ -203,11 +203,11 @@
       </div>
 
       <div
-        v-if="course?.status === 'rejected' && course.rejection_reason"
+        v-if="course?.status === 'rejected' && course.rejectionReason"
         class="rounded-xl border border-red-500/30 bg-red-950/20 p-4"
       >
         <p class="text-sm font-medium text-red-400">Rejection reason</p>
-        <p class="mt-1 text-sm text-red-300/80">{{ course.rejection_reason }}</p>
+        <p class="mt-1 text-sm text-red-300/80">{{ course.rejectionReason }}</p>
         <p class="mt-2 text-xs text-slate-400">
           Address the feedback above, then re-generate or submit again.
         </p>

@@ -16,12 +16,12 @@ export default defineEventHandler(async (event): Promise<Lesson> => {
   const { id: courseId, lessonId } = await getValidatedRouterParams(event, paramsSchema.parse);
 
   const course = await getCourseById(courseId);
-  if (course.producer_id !== user.id) {
+  if (course.producerId !== user.id) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
   }
 
   const lesson = await getLessonById(lessonId);
-  if (lesson.course_id !== courseId) {
+  if (lesson.courseId !== courseId) {
     throw createError({ statusCode: 404, statusMessage: 'Lesson not found' });
   }
 

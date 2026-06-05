@@ -8,7 +8,7 @@ async function runSearch() {
 
   if (!courseId || !query) {
     console.log(
-      'Uso: npx tsx --env-file=.env scripts/semantic-search.ts <COURSE_ID> "sua pergunta"'
+      'Uso: npx tsx --env-file=.env scripts/semantic-search.ts <courseId> "sua pergunta"'
     );
     process.exit(1);
   }
@@ -27,7 +27,7 @@ async function runSearch() {
     query_embedding: queryVector,
     match_threshold: 0.3, // 30% de similaridade
     match_count: 5, // Top 5 resultados
-    p_course_id: courseId
+    p_courseId: courseId
   });
 
   if (error) {

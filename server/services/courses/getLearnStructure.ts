@@ -19,25 +19,25 @@ export async function getLearnStructure(courseId: string, userId: string): Promi
   const course = await getCourseById(courseId);
   if (!course) throw createError({ statusCode: 404, statusMessage: 'Course not found' });
 
-  if (course.producer_id !== userId) {
+  if (course.producerId !== userId) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
   }
 
-  if (course.generation_status !== 'ready') {
+  if (course.generationStatus !== 'ready') {
     throw createError({ statusCode: 400, statusMessage: 'Course structure is not ready yet' });
   }
 
-  const [cover_url_signed, modules, completions] = await Promise.all([
-    course.cover_url
-      ? createSignedCoverUrl(course.cover_url, SIGNED_URL_EXPIRES_SEC)
+  const [coverUrlSigned, modules, completions] = await Promise.all([
+    course.coverUrl
+      ? createSignedCoverUrl(course.coverUrl, SIGNED_URL_EXPIRES_SEC)
       : Promise.resolve(null),
     listModulesWithLessons(courseId),
     listLessonCompletionsByCourse(userId, courseId)
   ]);
 
   return {
-    course: { ...course, cover_url_signed } as CourseWithSignedCover,
+    course: { ...course, coverUrlSigned } as CourseWithSignedCover,
     modules,
-    completedLessonIds: completions.map((c) => c.lesson_id)
+    completedLessonIds: completions.map((c) => c.lessonId)
   };
 }

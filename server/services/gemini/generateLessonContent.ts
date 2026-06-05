@@ -18,14 +18,14 @@ const multipleChoiceSchema = z.object({
   type: z.literal('multiple_choice'),
   question: z.string(),
   options: z.array(z.string()).min(2).max(4),
-  correct_index: z.number().int().min(0).max(3),
+  correctIndex: z.number().int().min(0).max(3),
   explanation: z.string()
 });
 
 const trueFalseSchema = z.object({
   type: z.literal('true_false'),
   statement: z.string(),
-  is_true: z.boolean(),
+  isTrue: z.boolean(),
   explanation: z.string()
 });
 
@@ -68,10 +68,10 @@ async function retrieveContext(
 ): Promise<Array<{ id: string; content: string; similarity: number }>> {
   const MIN_QUERIES = 3;
 
-  let queries = lesson.key_topics;
+  let queries = lesson.keyTopics;
 
   if (queries.length < MIN_QUERIES) {
-    queries = [...queries, ...lesson.learning_objectives];
+    queries = [...queries, ...lesson.learningObjectives];
   }
 
   if (queries.length < MIN_QUERIES) {
@@ -84,7 +84,7 @@ async function retrieveContext(
   // Search for similar chunks for each query
   const results = await Promise.all(
     embeddings.map((embedding) =>
-      semanticSearchChunks(lesson.course_id, embedding, CHUNKS_PER_QUERY)
+      semanticSearchChunks(lesson.courseId, embedding, CHUNKS_PER_QUERY)
     )
   );
 
@@ -113,12 +113,12 @@ function buildPrompt(
   contextChunks: Array<{ content: string; similarity: number }>
 ): string {
   const language = config.language ?? 'English';
-  const level = config.language_level ?? 'Standard';
+  const level = config.languageLevel ?? 'Standard';
   const tone = config.tone ?? 'Standard';
 
-  const objectivesList = lesson.learning_objectives.map((o, i) => `  ${i + 1}. ${o}`).join('\n');
+  const objectivesList = lesson.learningObjectives.map((o, i) => `  ${i + 1}. ${o}`).join('\n');
 
-  const topicsList = lesson.key_topics.join(', ');
+  const topicsList = lesson.keyTopics.join(', ');
 
   const contextText =
     contextChunks.length > 0
@@ -154,8 +154,8 @@ Create dynamic, engaging lesson content grounded in the source material above. P
    - Write 4–6 sections, each covering one focused concept from the lesson. Each section must have exactly 1 concise paragraph (3–5 sentences). Use concrete examples from the source material.
    - After every 1–2 sections, insert an exercise that reviews what was just covered.
    - Include at least 5 exercises total. Mix the three exercise types:
-     - \`multiple_choice\`: question, 4 options (A–D), correct_index (0-based), plausible distractors, explanation.
-     - \`true_false\`: factual statement, is_true boolean, explanation.
+     - \`multiple_choice\`: question, 4 options (A–D), correctIndex (0-based), plausible distractors, explanation.
+     - \`true_false\`: factual statement, isTrue boolean, explanation.
      - \`fill_blank\`: sentence with \`___\` for the blank, exact answer (one word or short phrase), explanation.
    - Each exercise must include a concise \`explanation\` shown after answering.
 3. **Summary:** Exactly 1 paragraph consolidating the main takeaways.
@@ -178,7 +178,7 @@ Create dynamic, engaging lesson content grounded in the source material above. P
       "type": "multiple_choice",
       "question": "...",
       "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct_index": 0,
+      "correctIndex": 0,
       "explanation": "..."
     },
     {
@@ -189,7 +189,7 @@ Create dynamic, engaging lesson content grounded in the source material above. P
     {
       "type": "true_false",
       "statement": "...",
-      "is_true": true,
+      "isTrue": true,
       "explanation": "..."
     },
     {

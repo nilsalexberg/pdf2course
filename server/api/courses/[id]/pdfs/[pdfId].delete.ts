@@ -15,16 +15,16 @@ export default defineEventHandler(async (event) => {
   }
 
   const course = await getCourseById(courseId);
-  if (course.producer_id !== user.id) {
+  if (course.producerId !== user.id) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
   }
 
   const pdf = await getCoursePdfById(pdfId);
-  if (pdf.course_id !== courseId) {
+  if (pdf.courseId !== courseId) {
     throw createError({ statusCode: 400, statusMessage: 'PDF does not belong to this course' });
   }
 
-  await deleteCoursePdf(pdf.file_path);
+  await deleteCoursePdf(pdf.filePath);
   await deleteCoursePdfFromDb(pdfId);
 
   return { success: true };

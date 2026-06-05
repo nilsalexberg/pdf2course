@@ -18,13 +18,13 @@ const stepSchema = z.discriminatedUnion('type', [
     type: z.literal('multiple_choice'),
     question: z.string().min(1),
     options: z.array(z.string()).min(2).max(4),
-    correct_index: z.number().int().min(0).max(3),
+    correctIndex: z.number().int().min(0).max(3),
     explanation: z.string()
   }),
   z.object({
     type: z.literal('true_false'),
     statement: z.string().min(1),
-    is_true: z.boolean(),
+    isTrue: z.boolean(),
     explanation: z.string()
   }),
   z.object({
@@ -52,12 +52,12 @@ export default defineEventHandler(async (event): Promise<Lesson> => {
   }
 
   const course = await getCourseById(id);
-  if (course.producer_id !== user.id) {
+  if (course.producerId !== user.id) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
   }
 
   const lesson = await getLessonById(lessonId);
-  if (lesson.course_id !== id) {
+  if (lesson.courseId !== id) {
     throw createError({ statusCode: 404, statusMessage: 'Lesson not found' });
   }
 

@@ -60,8 +60,8 @@
         const { status, error: genError } = JSON.parse(e.data);
         course.value = {
           ...course.value,
-          generation_status: status,
-          generation_error: genError ?? null
+          generationStatus: status,
+          generationError: genError ?? null
         };
       };
 
@@ -137,7 +137,7 @@
               <CoursesFormFields
                 v-model:title="title"
                 v-model:description="description"
-                :cover-url-signed="course?.cover_url_signed"
+                :cover-url-signed="course?.coverUrlSigned"
                 @cover-change="onCoverChange"
               />
 

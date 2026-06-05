@@ -12,7 +12,7 @@
     `/api/courses/${id}/structure`
   );
   const modules = computed(() => data.value?.modules ?? []);
-  const courseTitle = computed(() => data.value?.course_title ?? '');
+  const courseTitle = computed(() => data.value?.courseTitle ?? '');
 
   const { setBreadcrumbs } = useBreadcrumbs();
   watch(

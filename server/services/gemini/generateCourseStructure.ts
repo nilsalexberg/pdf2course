@@ -5,15 +5,15 @@ import type { Course, CoursePdf } from '../../../types/course';
 const STRUCTURE_MODEL = 'gemini-2.5-flash';
 
 const lessonSchema = z.object({
-  lesson_number: z.number().int().positive(),
+  lessonNumber: z.number().int().positive(),
   title: z.string(),
   description: z.string(),
-  learning_objectives: z.array(z.string()),
-  key_topics: z.array(z.string())
+  learningObjectives: z.array(z.string()),
+  keyTopics: z.array(z.string())
 });
 
 const moduleSchema = z.object({
-  module_number: z.number().int().positive(),
+  moduleNumber: z.number().int().positive(),
   title: z.string(),
   description: z.string(),
   lessons: z.array(lessonSchema)
@@ -35,8 +35,8 @@ function buildPrompt(
 ): string {
   const { config } = course;
   const summariesText = pdfs
-    .filter((p) => p.ai_summary)
-    .map((p, i) => `### Document ${i + 1}: ${p.filename}\n${JSON.stringify(p.ai_summary, null, 2)}`)
+    .filter((p) => p.aiSummary)
+    .map((p, i) => `### Document ${i + 1}: ${p.filename}\n${JSON.stringify(p.aiSummary, null, 2)}`)
     .join('\n\n');
 
   return `You are a Senior Instructional Designer specializing in creating structured, engaging courses.
@@ -47,7 +47,7 @@ Your task is to design the complete course structure (modules and lessons) for t
 - **Title:** ${course.title}
 - **Description:** ${course.description ?? 'Not provided'}
 - **Required structure:** EXACTLY ${numModules} modules, each with EXACTLY ${lessonsPerModule} lessons
-- **Language level:** ${config.language_level ?? 'Standard'}
+- **Language level:** ${config.languageLevel ?? 'Standard'}
 - **Focus:** ${config.focus ?? 'Balanced'}
 - **Output language:** ${config.language ?? 'English'}
 - **Tone:** ${config.tone ?? 'Standard'}
@@ -61,8 +61,8 @@ ${summariesText}
 3. Distribute content logically across modules, ensuring a coherent learning journey from fundamentals to advanced topics.
 4. For each lesson provide:
    - A clear title and concise description
-   - 2–4 specific, measurable learning_objectives (start with action verbs: "Understand", "Apply", "Calculate", etc.)
-   - 3–6 key_topics that will be covered
+   - 2–4 specific, measurable learningObjectives (start with action verbs: "Understand", "Apply", "Calculate", etc.)
+   - 3–6 keyTopics that will be covered
 5. All text (titles, descriptions, objectives, topics) must be written in: ${config.language ?? 'English'}
 6. Respond with ONLY the JSON structure described below, no markdown fences or extra text.
 
@@ -70,16 +70,16 @@ ${summariesText}
 {
   "modules": [
     {
-      "module_number": 1,
+      "moduleNumber": 1,
       "title": "Module title",
       "description": "Brief description of what this module covers",
       "lessons": [
         {
-          "lesson_number": 1,
+          "lessonNumber": 1,
           "title": "Lesson title",
           "description": "Concise scope of this lesson",
-          "learning_objectives": ["Objective 1", "Objective 2"],
-          "key_topics": ["Topic A", "Topic B"],
+          "learningObjectives": ["Objective 1", "Objective 2"],
+          "keyTopics": ["Topic A", "Topic B"],
         }
       ]
     }
@@ -92,15 +92,15 @@ const MAX_RETRIES = 3;
 /**
  * Calls Gemini to generate the full course structure (modules + lessons) from
  * document summaries. Validates the response with Zod and enforces the
- * num_modules / lessons_per_module business rules before returning.
+ * numModules / lessonsPerModule business rules before returning.
  * Retries up to MAX_RETRIES times on any failure (API, parse, or business rule).
  */
 export async function generateCourseStructure(
   course: Course,
   pdfs: CoursePdf[]
 ): Promise<CourseStructure> {
-  const numModules = course.config.num_modules ?? 3;
-  const lessonsPerModule = course.config.lessons_per_module ?? 3;
+  const numModules = course.config.numModules ?? 3;
+  const lessonsPerModule = course.config.lessonsPerModule ?? 3;
   const ai = getGeminiClient();
   const prompt = buildPrompt(course, pdfs, numModules, lessonsPerModule);
 

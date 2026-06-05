@@ -90,12 +90,12 @@ export async function processCourseGeneration(courseId: string) {
 async function extractTextFromPdfs(pdfs: any[]) {
   for (const pdf of pdfs) {
     // Idempotency: skip PDFs already processed in a previous run
-    if (pdf.extracted_text) {
+    if (pdf.extractedText) {
       console.log(`[course-generation] Skipping ${pdf.filename} — text already extracted`);
       continue;
     }
 
-    const buffer = await downloadCoursePdf(pdf.file_path);
+    const buffer = await downloadCoursePdf(pdf.filePath);
     const parser = new PDFParse({ data: new Uint8Array(buffer.buffer) });
     const result = await parser.getText();
     await parser.destroy();
@@ -108,24 +108,24 @@ async function extractTextFromPdfs(pdfs: any[]) {
 }
 
 /**
- * Splits extracted_text from each PDF into overlapping chunks and persists them.
+ * Splits extractedText from each PDF into overlapping chunks and persists them.
  * Idempotent: deletes existing chunks for each PDF before re-inserting.
  * Wrapped in a try/catch per PDF so failures are clearly attributed for worker retries.
  */
 async function chunkDocuments(courseId: string, pdfs: any[], course: Course) {
-  const chunkSize = course.config?.chunk_size;
-  const chunkOverlap = course.config?.chunk_overlap;
+  const chunkSize = course.config?.chunkSize;
+  const chunkOverlap = course.config?.chunkOverlap;
   // Fetch all existing chunks for the course to check which PDFs are already fully processed
   const existingChunks = await listDocumentChunksByCourseId(courseId);
 
   for (const pdf of pdfs) {
-    if (!pdf.extracted_text) {
+    if (!pdf.extractedText) {
       console.log(`[course-generation] Skipping chunking for ${pdf.filename} — no extracted text`);
       continue;
     }
 
     // Idempotency: Skip if chunks exist AND all have embeddings (indicating a successful previous run)
-    const pdfChunks = existingChunks.filter((c) => c.course_pdf_id === pdf.id);
+    const pdfChunks = existingChunks.filter((c) => c.coursePdfId === pdf.id);
     const isFullyProcessed = pdfChunks.length > 0 && pdfChunks.every((c) => c.embedding);
 
     if (isFullyProcessed) {
@@ -140,11 +140,11 @@ async function chunkDocuments(courseId: string, pdfs: any[], course: Course) {
       // We delete existing chunks (if any) to ensure a clean state before re-inserting.
       await deleteDocumentChunksByPdfId(pdf.id);
 
-      const chunks = splitIntoChunks(pdf.extracted_text, chunkSize, chunkOverlap);
-      const rows = chunks.map((content, chunk_index) => ({
-        course_id: courseId,
-        course_pdf_id: pdf.id,
-        chunk_index,
+      const chunks = splitIntoChunks(pdf.extractedText, chunkSize, chunkOverlap);
+      const rows = chunks.map((content, chunkIndex) => ({
+        courseId: courseId,
+        coursePdfId: pdf.id,
+        chunkIndex,
         content
       }));
 
@@ -219,8 +219,8 @@ async function persistCourseStructure(courseId: string, structure: CourseStructu
   await deleteCourseModules(courseId);
 
   const moduleRows = structure.modules.map((m) => ({
-    course_id: courseId,
-    module_number: m.module_number,
+    courseId: courseId,
+    moduleNumber: m.moduleNumber,
     title: m.title,
     description: m.description
   }));
@@ -231,18 +231,18 @@ async function persistCourseStructure(courseId: string, structure: CourseStructu
   );
 
   const lessonRows = structure.modules.flatMap((m) => {
-    const dbModule = insertedModules.find((dbm) => dbm.module_number === m.module_number);
+    const dbModule = insertedModules.find((dbm) => dbm.moduleNumber === m.moduleNumber);
     if (!dbModule) {
-      throw new Error(`Could not find inserted module for module_number ${m.module_number}`);
+      throw new Error(`Could not find inserted module for moduleNumber ${m.moduleNumber}`);
     }
     return m.lessons.map((l) => ({
-      module_id: dbModule.id,
-      course_id: courseId,
-      lesson_number: l.lesson_number,
+      moduleId: dbModule.id,
+      courseId: courseId,
+      lessonNumber: l.lessonNumber,
       title: l.title,
       description: l.description,
-      learning_objectives: l.learning_objectives,
-      key_topics: l.key_topics
+      learningObjectives: l.learningObjectives,
+      keyTopics: l.keyTopics
     }));
   });
 
@@ -251,28 +251,28 @@ async function persistCourseStructure(courseId: string, structure: CourseStructu
 }
 
 /**
- * Generates a structured knowledge taxonomy (ai_summary) for each PDF using Gemini.
- * Idempotent: skips PDFs that already have an ai_summary from a previous run.
+ * Generates a structured knowledge taxonomy (aiSummary) for each PDF using Gemini.
+ * Idempotent: skips PDFs that already have an aiSummary from a previous run.
  */
 async function summarizeDocuments(courseId: string, pdfs: any[]) {
   await updateCourseGenerationStatus(courseId, 'summarizing');
   console.log(`[course-generation] Course ${courseId} status → summarizing`);
 
   for (const pdf of pdfs) {
-    if (pdf.ai_summary) {
+    if (pdf.aiSummary) {
       console.log(`[course-generation] Skipping ${pdf.filename} — already summarized`);
       continue;
     }
 
-    if (!pdf.extracted_text) {
+    if (!pdf.extractedText) {
       console.log(`[course-generation] Skipping ${pdf.filename} — no extracted text`);
       continue;
     }
 
-    const summary = await summarizeDocument(pdf.extracted_text);
+    const summary = await summarizeDocument(pdf.extractedText);
     await updateCoursePdfAiSummary(pdf.id, summary);
     console.log(
-      `[course-generation] Summarized ${pdf.filename} → ${summary.structural_outline.length} topics`
+      `[course-generation] Summarized ${pdf.filename} → ${summary.structuralOutline.length} topics`
     );
   }
 }

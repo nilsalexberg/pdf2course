@@ -69,7 +69,7 @@
           >
             <template #meta>
               <div class="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                <CoursesGenerationStatus :status="course?.generation_status ?? 'idle'" />
+                <CoursesGenerationStatus :status="course?.generationStatus ?? 'idle'" />
                 <span
                   class="inline-flex items-center rounded-full px-2 py-0.5 capitalize"
                   :class="statusClass[course.status]"
@@ -80,7 +80,7 @@
             </template>
             <template #actions>
               <NuxtLink
-                v-if="course.generation_status === 'ready'"
+                v-if="course.generationStatus === 'ready'"
                 :to="`/dashboard/courses/${course.id}/learn`"
                 class="text-sm font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
               >

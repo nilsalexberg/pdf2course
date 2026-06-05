@@ -19,9 +19,9 @@ export default defineEventHandler(async (event): Promise<Course> => {
   const parsed = courseCreateSchema.safeParse({
     title: fields.title ?? '',
     description: fields.description ?? '',
-    num_modules: fields.num_modules ?? '',
-    lessons_per_module: fields.lessons_per_module ?? '',
-    language_level: fields.language_level ?? '',
+    numModules: fields.numModules ?? '',
+    lessonsPerModule: fields.lessonsPerModule ?? '',
+    languageLevel: fields.languageLevel ?? '',
     focus: fields.focus ?? '',
     language: fields.language ?? '',
     tone: fields.tone ?? ''

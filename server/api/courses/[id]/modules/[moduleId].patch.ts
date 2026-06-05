@@ -20,7 +20,7 @@ export default defineEventHandler(async (event): Promise<Module> => {
   }
 
   const course = await getCourseById(id);
-  if (course.producer_id !== user.id) {
+  if (course.producerId !== user.id) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
   }
 

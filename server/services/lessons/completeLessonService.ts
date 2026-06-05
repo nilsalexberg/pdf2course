@@ -18,12 +18,12 @@ export async function completeLessonService(
     throw createError({ statusCode: 404, statusMessage: 'Course not found' });
   }
 
-  if (course.producer_id !== userId) {
+  if (course.producerId !== userId) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
   }
 
   const lesson = await getLessonById(lessonId);
-  if (lesson.course_id !== courseId) {
+  if (lesson.courseId !== courseId) {
     throw createError({ statusCode: 404, statusMessage: 'Lesson not found' });
   }
 
@@ -32,9 +32,9 @@ export async function completeLessonService(
   }
 
   return upsertLessonCompletion({
-    user_id: userId,
-    lesson_id: lessonId,
-    course_id: courseId,
-    score_percent: scorePercent
+    userId: userId,
+    lessonId: lessonId,
+    courseId: courseId,
+    scorePercent: scorePercent
   });
 }

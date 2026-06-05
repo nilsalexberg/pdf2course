@@ -20,7 +20,7 @@
   const isInProgress = computed(() => props.lesson.status === 'generating');
 
   function studyLesson() {
-    router.push(`/dashboard/courses/${props.lesson.course_id}/lessons/${props.lesson.id}`);
+    router.push(`/dashboard/courses/${props.lesson.courseId}/lessons/${props.lesson.id}`);
   }
 </script>
 
@@ -86,7 +86,7 @@
               d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
             />
           </svg>
-          <span v-else>{{ lesson.lesson_number }}</span>
+          <span v-else>{{ lesson.lessonNumber }}</span>
         </span>
 
         <div class="flex-1 min-w-0">
@@ -118,13 +118,13 @@
         {{ lesson.description }}
       </p>
 
-      <div v-if="lesson.learning_objectives.length" class="space-y-2">
+      <div v-if="lesson.learningObjectives.length" class="space-y-2">
         <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
           Learning Objectives
         </p>
         <ul class="space-y-1.5">
           <li
-            v-for="(obj, i) in lesson.learning_objectives"
+            v-for="(obj, i) in lesson.learningObjectives"
             :key="i"
             class="flex items-start gap-2 text-sm text-slate-300"
           >
@@ -142,11 +142,11 @@
         </ul>
       </div>
 
-      <div v-if="lesson.key_topics.length" class="space-y-2">
+      <div v-if="lesson.keyTopics.length" class="space-y-2">
         <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Key Topics</p>
         <div class="flex flex-wrap gap-2">
           <span
-            v-for="(topic, i) in lesson.key_topics"
+            v-for="(topic, i) in lesson.keyTopics"
             :key="i"
             class="inline-block rounded-full bg-slate-800 border border-slate-700 px-2.5 py-0.5 text-xs text-slate-300"
           >
@@ -156,8 +156,8 @@
       </div>
 
       <!-- Generation error -->
-      <p v-if="lesson.status === 'failed' && lesson.generation_error" class="text-xs text-red-400">
-        Error: {{ lesson.generation_error }}
+      <p v-if="lesson.status === 'failed' && lesson.generationError" class="text-xs text-red-400">
+        Error: {{ lesson.generationError }}
       </p>
 
       <!-- Action buttons -->

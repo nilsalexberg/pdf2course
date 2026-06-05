@@ -90,7 +90,7 @@
             >
               <template #meta>
                 <p class="text-xs text-slate-500">
-                  {{ new Date(course.created_at).toLocaleDateString() }}
+                  {{ new Date(course.createdAt).toLocaleDateString() }}
                 </p>
               </template>
               <template #actions>
@@ -142,7 +142,7 @@
                     {{ course.status.replace('_', ' ') }}
                   </span>
                   <span class="text-xs text-slate-500">
-                    {{ new Date(course.created_at).toLocaleDateString() }}
+                    {{ new Date(course.createdAt).toLocaleDateString() }}
                   </span>
                 </div>
               </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import {
-    COURSE_LANGUAGE_LEVELS,
+    COURSE_languageLevelS,
     COURSE_FOCUS_OPTIONS,
     COURSE_LANGUAGES,
     COURSE_TONES,
@@ -61,7 +61,7 @@
   <div v-else>
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
       <UiInput
-        id="num_modules"
+        id="numModules"
         v-model.number="numModules"
         type="number"
         label="Number of modules"
@@ -70,7 +70,7 @@
         :max="50"
       />
       <UiInput
-        id="lessons_per_module"
+        id="lessonsPerModule"
         v-model.number="lessonsPerModule"
         type="number"
         label="Lessons per module"
@@ -79,10 +79,10 @@
         :max="20"
       />
       <UiSelect
-        id="language_level"
+        id="languageLevel"
         v-model="languageLevel"
         label="Language level"
-        :options="COURSE_LANGUAGE_LEVELS"
+        :options="COURSE_languageLevelS"
         required
       />
       <UiSelect
@@ -125,7 +125,7 @@
 
           <div class="grid grid-cols-2 gap-4">
             <UiInput
-              id="chunk_size"
+              id="chunkSize"
               v-model.number="chunkSize"
               type="number"
               label="Chunk size (chars)"
@@ -134,7 +134,7 @@
               :placeholder="String(DEFAULT_CHUNK_SIZE)"
             />
             <UiInput
-              id="chunk_overlap"
+              id="chunkOverlap"
               v-model.number="chunkOverlap"
               type="number"
               label="Chunk overlap (chars)"

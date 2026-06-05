@@ -11,17 +11,17 @@
 <template>
   <div class="relative overflow-hidden">
     <div
-      v-if="course.cover_url_signed"
+      v-if="course.coverUrlSigned"
       class="absolute inset-0 scale-110"
-      :style="`background-image: url('${course.cover_url_signed}'); background-size: cover; background-position: center;`"
+      :style="`background-image: url('${course.coverUrlSigned}'); background-size: cover; background-position: center;`"
     />
     <div class="absolute inset-0 bg-slate-950/85 backdrop-blur-sm" />
 
     <div class="relative max-w-4xl mx-auto px-4 py-10 pt-4">
       <div class="flex gap-6 items-start">
         <img
-          v-if="course.cover_url_signed"
-          :src="course.cover_url_signed"
+          v-if="course.coverUrlSigned"
+          :src="course.coverUrlSigned"
           :alt="course.title"
           class="w-24 h-24 rounded-xl object-cover border border-slate-700/60 shadow-xl shrink-0 hidden sm:block"
         />

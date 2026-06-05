@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import type { CourseWithSignedCover, ModuleWithLessons } from '@@/types/course';
   import {
-    COURSE_LANGUAGE_LEVELS,
+    COURSE_languageLevelS,
     COURSE_FOCUS_OPTIONS,
     COURSE_LANGUAGES,
     COURSE_TONES,
@@ -70,17 +70,17 @@
     }
   }
 
-  const settingsNumModules = computed(() => course.value?.config?.num_modules ?? 5);
-  const settingsLessonsPerModule = computed(() => course.value?.config?.lessons_per_module ?? 4);
+  const settingsNumModules = computed(() => course.value?.config?.numModules ?? 5);
+  const settingsLessonsPerModule = computed(() => course.value?.config?.lessonsPerModule ?? 4);
   const settingsLanguageLevel = computed(
-    () => course.value?.config?.language_level ?? COURSE_LANGUAGE_LEVELS[0]
+    () => course.value?.config?.languageLevel ?? COURSE_languageLevelS[0]
   );
   const settingsFocus = computed(() => course.value?.config?.focus ?? COURSE_FOCUS_OPTIONS[0]);
   const settingsLanguage = computed(() => course.value?.config?.language ?? COURSE_LANGUAGES[0]);
   const settingsTone = computed(() => course.value?.config?.tone ?? COURSE_TONES[0]);
-  const settingsChunkSize = computed(() => course.value?.config?.chunk_size ?? DEFAULT_CHUNK_SIZE);
+  const settingsChunkSize = computed(() => course.value?.config?.chunkSize ?? DEFAULT_CHUNK_SIZE);
   const settingsChunkOverlap = computed(
-    () => course.value?.config?.chunk_overlap ?? DEFAULT_CHUNK_OVERLAP
+    () => course.value?.config?.chunkOverlap ?? DEFAULT_CHUNK_OVERLAP
   );
 
   const statusClass: Record<string, string> = {
@@ -107,11 +107,11 @@
         <div class="rounded-2xl border border-slate-800 bg-slate-900/80 overflow-hidden mb-6">
           <div class="flex gap-6 p-6">
             <div
-              v-if="course.cover_url_signed"
+              v-if="course.coverUrlSigned"
               class="w-32 shrink-0 rounded-xl overflow-hidden bg-slate-800"
             >
               <img
-                :src="course.cover_url_signed"
+                :src="course.coverUrlSigned"
                 :alt="course.title"
                 class="w-full aspect-square object-cover"
               />
@@ -132,14 +132,14 @@
                 {{ course.description }}
               </p>
               <p class="text-xs text-slate-500 mt-3">
-                Created {{ new Date(course.created_at).toLocaleDateString() }}
+                Created {{ new Date(course.createdAt).toLocaleDateString() }}
               </p>
               <div
-                v-if="course.status === 'rejected' && course.rejection_reason"
+                v-if="course.status === 'rejected' && course.rejectionReason"
                 class="mt-3 rounded-lg bg-red-950/50 border border-red-900/40 px-3 py-2"
               >
                 <p class="text-xs font-medium text-red-400 mb-0.5">Rejection reason</p>
-                <p class="text-sm text-red-200">{{ course.rejection_reason }}</p>
+                <p class="text-sm text-red-200">{{ course.rejectionReason }}</p>
               </div>
             </div>
           </div>

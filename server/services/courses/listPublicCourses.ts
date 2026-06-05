@@ -16,8 +16,8 @@ export async function listPublicCourses(opts: {
   const withCovers = await Promise.all(
     courses.map(async (course) => ({
       ...course,
-      cover_url_signed: course.cover_url
-        ? await createSignedCoverUrl(course.cover_url, SIGNED_URL_EXPIRES_SEC)
+      coverUrlSigned: course.coverUrl
+        ? await createSignedCoverUrl(course.coverUrl, SIGNED_URL_EXPIRES_SEC)
         : null
     }))
   );

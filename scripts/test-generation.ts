@@ -6,14 +6,14 @@ import { processCourseGeneration } from '../server/services/courses/processCours
  * Script de teste local para processamento de cursos.
  * Executa a lógica de extração, chunking e embeddings sem usar Redis/BullMQ.
  *
- * Uso: npx tsx --env-file=.env scripts/test-generation.ts <COURSE_ID>
+ * Uso: npx tsx --env-file=.env scripts/test-generation.ts <courseId>
  */
 async function runTest() {
   const courseId = process.argv[2];
 
   if (!courseId) {
     console.error('❌ Erro: Forneça o ID do curso como argumento.');
-    console.log('Uso: npx tsx --env-file=.env scripts/test-generation.ts <COURSE_ID>');
+    console.log('Uso: npx tsx --env-file=.env scripts/test-generation.ts <courseId>');
     process.exit(1);
   }
 

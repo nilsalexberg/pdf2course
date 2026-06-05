@@ -10,7 +10,7 @@ export default defineEventHandler(async (event): Promise<LessonCompletion> => {
 
   const courseId = getRouterParam(event, 'id')!;
   const lessonId = getRouterParam(event, 'lessonId')!;
-  const { score_percent } = await readValidatedBody(event, lessonCompleteSchema.parse);
+  const { scorePercent } = await readValidatedBody(event, lessonCompleteSchema.parse);
 
-  return completeLessonService(courseId, lessonId, user.id, score_percent);
+  return completeLessonService(courseId, lessonId, user.id, scorePercent);
 });

@@ -48,7 +48,7 @@ export default defineNitroPlugin(async () => {
 
     await db.execute(sql`
       CREATE OR REPLACE FUNCTION match_document_chunks(
-        p_course_id       uuid,
+        p_courseId       uuid,
         p_query_embedding vector(${sql.raw(String(EMBEDDING_DIMENSIONS))}),
         p_match_count     int default 5
       )
@@ -57,7 +57,7 @@ export default defineNitroPlugin(async () => {
       AS $$
         SELECT id, content, 1 - (embedding <=> p_query_embedding) AS similarity
         FROM document_chunks
-        WHERE course_id = p_course_id AND embedding IS NOT NULL
+        WHERE courseId = p_courseId AND embedding IS NOT NULL
         ORDER BY embedding <=> p_query_embedding
         LIMIT p_match_count;
       $$

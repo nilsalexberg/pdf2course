@@ -112,8 +112,8 @@
   const lessonForm = ref({
     title: '',
     description: '',
-    learning_objectives: '',
-    key_topics: ''
+    learningObjectives: '',
+    keyTopics: ''
   });
   const lessonSaving = ref(false);
   const lessonError = ref<string | null>(null);
@@ -123,8 +123,8 @@
     lessonForm.value = {
       title: lesson.title,
       description: lesson.description,
-      learning_objectives: lesson.learning_objectives.join('\n'),
-      key_topics: lesson.key_topics.join('\n')
+      learningObjectives: lesson.learningObjectives.join('\n'),
+      keyTopics: lesson.keyTopics.join('\n')
     };
     lessonError.value = null;
   }
@@ -141,11 +141,11 @@
       const body = {
         title: lessonForm.value.title,
         description: lessonForm.value.description,
-        learning_objectives: lessonForm.value.learning_objectives
+        learningObjectives: lessonForm.value.learningObjectives
           .split('\n')
           .map((s) => s.trim())
           .filter(Boolean),
-        key_topics: lessonForm.value.key_topics
+        keyTopics: lessonForm.value.keyTopics
           .split('\n')
           .map((s) => s.trim())
           .filter(Boolean)
@@ -154,7 +154,7 @@
         method: 'PATCH',
         body
       });
-      const mod = localModules.value.find((m) => m.id === lesson.module_id);
+      const mod = localModules.value.find((m) => m.id === lesson.moduleId);
       if (mod) {
         const idx = mod.lessons.findIndex((l) => l.id === lesson.id);
         if (idx !== -1) mod.lessons[idx] = updated;
@@ -202,7 +202,7 @@
         <div v-else class="flex items-start justify-between gap-4">
           <div class="flex-1 min-w-0">
             <p class="text-xs font-semibold text-emerald-400 uppercase tracking-wide mb-0.5">
-              Module {{ mod.module_number }}
+              Module {{ mod.moduleNumber }}
             </p>
             <p class="text-sm font-semibold text-white">{{ mod.title }}</p>
             <p class="text-xs text-slate-400 mt-0.5 line-clamp-1">{{ mod.description }}</p>
@@ -233,12 +233,12 @@
             <UiInput v-model="lessonForm.title" label="Lesson title" />
             <UiTextarea v-model="lessonForm.description" label="Description" :rows="2" />
             <UiTextarea
-              v-model="lessonForm.learning_objectives"
+              v-model="lessonForm.learningObjectives"
               label="Learning objectives (one per line)"
               :rows="4"
             />
             <UiTextarea
-              v-model="lessonForm.key_topics"
+              v-model="lessonForm.keyTopics"
               label="Key topics (one per line)"
               :rows="3"
             />
@@ -269,7 +269,7 @@
             <div class="flex items-start justify-between gap-4">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
-                  <span class="text-xs text-slate-500">Lesson {{ lesson.lesson_number }}</span>
+                  <span class="text-xs text-slate-500">Lesson {{ lesson.lessonNumber }}</span>
                   <span
                     class="text-xs rounded-full px-2 py-0.5 font-medium"
                     :class="{
@@ -290,13 +290,13 @@
                 </div>
                 <p class="text-sm font-medium text-white">{{ lesson.title }}</p>
                 <p class="text-xs text-slate-400 mt-0.5">{{ lesson.description }}</p>
-                <div v-if="lesson.learning_objectives.length" class="mt-2 space-y-1">
+                <div v-if="lesson.learningObjectives.length" class="mt-2 space-y-1">
                   <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">
                     Objectives
                   </p>
                   <ul class="space-y-0.5">
                     <li
-                      v-for="(obj, i) in lesson.learning_objectives"
+                      v-for="(obj, i) in lesson.learningObjectives"
                       :key="i"
                       class="text-xs text-slate-400 flex gap-1.5"
                     >
@@ -305,9 +305,9 @@
                     </li>
                   </ul>
                 </div>
-                <div v-if="lesson.key_topics.length" class="mt-2 flex flex-wrap gap-1.5">
+                <div v-if="lesson.keyTopics.length" class="mt-2 flex flex-wrap gap-1.5">
                   <span
-                    v-for="(topic, i) in lesson.key_topics"
+                    v-for="(topic, i) in lesson.keyTopics"
                     :key="i"
                     class="text-xs bg-slate-800 text-slate-300 rounded px-2 py-0.5"
                   >
@@ -315,10 +315,10 @@
                   </span>
                 </div>
                 <p
-                  v-if="lesson.status === 'failed' && lesson.generation_error"
+                  v-if="lesson.status === 'failed' && lesson.generationError"
                   class="text-xs text-red-400 mt-1"
                 >
-                  Error: {{ lesson.generation_error }}
+                  Error: {{ lesson.generationError }}
                 </p>
               </div>
               <button

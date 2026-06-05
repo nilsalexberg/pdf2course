@@ -11,20 +11,20 @@ A sua tarefa é LER O DOCUMENTO INTEIRO E GERAR UM MAPEAMENTO ESTRUTURAL DE CONH
 MUITO IMPORTANTE:
 1. NÃO faça um resumo descritivo/textual do conteúdo (narrativas, introduções e definições textuais devem ser descartadas). O conteúdo denso desse PDF será consultado separadamente via RAG depois.
 2. Seu único objetivo agora é CRIAR A TAXONOMIA COMPLETA DOS ASSUNTOS para que essa lista de "objetivos de aprendizado e tópicos" oriente a criação da ementa do curso na próxima etapa.
-3. Seja EXTREMAMENTE GRANULAR. Não junte muitos conceitos num único tópico no "structural_outline", divida em quantos tópicos forem necessários para abranger 100% da profundidade do arquivo de forma separada.
+3. Seja EXTREMAMENTE GRANULAR. Não junte muitos conceitos num único tópico no "structuralOutline", divida em quantos tópicos forem necessários para abranger 100% da profundidade do arquivo de forma separada.
 4. Você deve gerar a resposta ÚNICA E EXCLUSIVAMENTE em formato JSON, seguindo estritamente a estrutura abaixo, sem marcação markdown além das permitidas para código.
 
 ESTRUTURA JSON DESEJADA:
 {
-  "document_title": "Nome sugerido para este documento",
-  "core_themes": ["Tema central 1", "Tema central 2"],
-  "estimated_target_difficulty": "Beginner, Intermediate ou Advanced",
-  "target_audience": "Breve descrição do público que leria isso",
-  "structural_outline": [
+  "documentTitle": "Nome sugerido para este documento",
+  "coreThemes": ["Tema central 1", "Tema central 2"],
+  "estimatedTargetDifficulty": "Beginner, Intermediate ou Advanced",
+  "targetAudience": "Breve descrição do público que leria isso",
+  "structuralOutline": [
     {
-      "topic_title": "Tema do bloco",
-      "key_concepts": ["Conceito A", "Conceito B", "Termo Técnico C"],
-      "learning_objectives": ["Ser capaz de calcular X", "Entender quando aplicar Y"]
+      "topicTitle": "Tema do bloco",
+      "keyConcepts": ["Conceito A", "Conceito B", "Termo Técnico C"],
+      "learningObjectives": ["Ser capaz de calcular X", "Entender quando aplicar Y"]
     }
   ]
 }

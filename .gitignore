@@ -27,3 +27,4 @@ logs
 # IDE
 .agents
 .mcp_data
+.trae

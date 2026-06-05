@@ -26,7 +26,7 @@
     if (isSubmitted.value) return;
     selectedOption.value = optionIndex;
     if (props.exercise.type !== 'multiple_choice') return;
-    isCorrect.value = optionIndex === props.exercise.correct_index;
+    isCorrect.value = optionIndex === props.exercise.correctIndex;
     isSubmitted.value = true;
     emit('answered', isCorrect.value);
   }
@@ -35,7 +35,7 @@
     if (isSubmitted.value) return;
     selectedBool.value = answer;
     if (props.exercise.type !== 'true_false') return;
-    isCorrect.value = answer === props.exercise.is_true;
+    isCorrect.value = answer === props.exercise.isTrue;
     isSubmitted.value = true;
     emit('answered', isCorrect.value);
   }
@@ -73,11 +73,11 @@
             'border-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-800/50':
               !isSubmitted && selectedOption !== i,
             'border-emerald-500 bg-emerald-900/30 text-emerald-300':
-              isSubmitted && i === exercise.correct_index,
+              isSubmitted && i === exercise.correctIndex,
             'border-red-500 bg-red-900/30 text-red-300':
-              isSubmitted && selectedOption === i && i !== exercise.correct_index,
+              isSubmitted && selectedOption === i && i !== exercise.correctIndex,
             'border-slate-700 text-slate-500':
-              isSubmitted && i !== exercise.correct_index && selectedOption !== i
+              isSubmitted && i !== exercise.correctIndex && selectedOption !== i
           }"
           :disabled="isSubmitted"
           @click="submitMultipleChoice(i)"
@@ -98,11 +98,11 @@
             'border-slate-700 text-slate-300 hover:border-emerald-600 hover:bg-emerald-900/20 hover:text-emerald-300':
               !isSubmitted,
             'border-emerald-500 bg-emerald-900/30 text-emerald-300':
-              isSubmitted && exercise.is_true,
+              isSubmitted && exercise.isTrue,
             'border-red-500 bg-red-900/30 text-red-300':
-              isSubmitted && selectedBool === true && !exercise.is_true,
+              isSubmitted && selectedBool === true && !exercise.isTrue,
             'border-slate-700 text-slate-500':
-              isSubmitted && selectedBool !== true && !exercise.is_true
+              isSubmitted && selectedBool !== true && !exercise.isTrue
           }"
           :disabled="isSubmitted"
           @click="submitTrueFalse(true)"
@@ -115,11 +115,11 @@
             'border-slate-700 text-slate-300 hover:border-red-600 hover:bg-red-900/20 hover:text-red-300':
               !isSubmitted,
             'border-emerald-500 bg-emerald-900/30 text-emerald-300':
-              isSubmitted && !exercise.is_true,
+              isSubmitted && !exercise.isTrue,
             'border-red-500 bg-red-900/30 text-red-300':
-              isSubmitted && selectedBool === false && exercise.is_true,
+              isSubmitted && selectedBool === false && exercise.isTrue,
             'border-slate-700 text-slate-500':
-              isSubmitted && selectedBool !== false && exercise.is_true
+              isSubmitted && selectedBool !== false && exercise.isTrue
           }"
           :disabled="isSubmitted"
           @click="submitTrueFalse(false)"

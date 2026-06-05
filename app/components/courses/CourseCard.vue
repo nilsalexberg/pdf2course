@@ -22,9 +22,9 @@
     class="rounded-2xl border bg-slate-900/80 overflow-hidden flex gap-4"
     :class="highlighted ? 'border-amber-800/40' : 'border-slate-800'"
   >
-    <div v-if="course.cover_url_signed" :class="`${coverClass} shrink-0 bg-slate-800`">
+    <div v-if="course.coverUrlSigned" :class="`${coverClass} shrink-0 bg-slate-800`">
       <img
-        :src="course.cover_url_signed"
+        :src="course.coverUrlSigned"
         :alt="course.title"
         class="w-full h-full aspect-square object-cover"
       />

@@ -18,11 +18,11 @@ export async function startCourseGeneration(
     throw createError({ statusCode: 404, statusMessage: 'Course not found' });
   }
 
-  if (course.producer_id !== userId) {
+  if (course.producerId !== userId) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
   }
 
-  if (GENERATION_IN_PROGRESS.includes(course.generation_status)) {
+  if (GENERATION_IN_PROGRESS.includes(course.generationStatus)) {
     throw createError({
       statusCode: 409,
       statusMessage: 'Course generation is already in progress'

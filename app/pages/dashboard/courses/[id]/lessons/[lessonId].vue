@@ -125,7 +125,7 @@
       try {
         await $fetch(`/api/courses/${courseId}/lessons/${lessonId}/complete`, {
           method: 'POST',
-          body: { score_percent: scorePercent.value }
+          body: { scorePercent: scorePercent.value }
         });
       } catch (err) {
         console.warn('[lesson-complete] Failed to save completion:', err);
@@ -214,7 +214,7 @@
         <template v-if="currentSlide?.kind === 'intro'">
           <div class="flex-1 space-y-4">
             <p class="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-              Lesson {{ lesson.lesson_number }}
+              Lesson {{ lesson.lessonNumber }}
             </p>
             <h1 class="text-2xl font-bold text-slate-100">{{ lesson.title }}</h1>
             <p class="text-slate-300 leading-relaxed">{{ lesson.content.introduction }}</p>

@@ -6,13 +6,13 @@ export async function deleteCourse(userId: string, courseId: string): Promise<vo
   const course = await getCourseById(courseId);
   if (!course) throw createError({ statusCode: 404, statusMessage: 'Course not found' });
 
-  if (course.producer_id !== userId) {
+  if (course.producerId !== userId) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' });
   }
 
-  if (course.cover_url) {
+  if (course.coverUrl) {
     try {
-      await deleteCourseCover(course.cover_url);
+      await deleteCourseCover(course.coverUrl);
     } catch {
       // ignore missing
     }

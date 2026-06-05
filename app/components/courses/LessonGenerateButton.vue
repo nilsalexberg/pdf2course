@@ -18,7 +18,7 @@
 
     try {
       const updated = await $fetch<Lesson>(
-        `/api/courses/${props.lesson.course_id}/lessons/${props.lesson.id}/generate`,
+        `/api/courses/${props.lesson.courseId}/lessons/${props.lesson.id}/generate`,
         { method: 'POST' }
       );
       emit('update:lesson', updated);
@@ -26,7 +26,7 @@
       emit('update:lesson', {
         ...props.lesson,
         status: 'failed',
-        generation_error: err?.data?.statusMessage ?? err?.message ?? 'Unknown error'
+        generationError: err?.data?.statusMessage ?? err?.message ?? 'Unknown error'
       });
     } finally {
       isGenerating.value = false;
