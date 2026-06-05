@@ -117,4 +117,4 @@ Layered architecture within `server/`:
 - **`server/db/`**: Drizzle client (`index.ts`) and schema (`schema.ts`).
 - **`server/lib/`**: Shared infrastructure — `auth.ts` (better-auth instance), `storage.ts` (MinIO/S3 client).
 
-Refer to [STYLE_GUIDE.md](./STYLE_GUIDE.md) for detailed coding standards.
+Refer to [docs/style-guide.md](./docs/style-guide.md) for detailed coding standards.

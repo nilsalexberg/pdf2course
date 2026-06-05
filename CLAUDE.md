@@ -24,7 +24,7 @@ Migrations auto-run on app start in production via the `migrate` server plugin.
 
 ## Architecture
 
-The project uses **Nuxt 4's `app/` + `server/` directory split**. Always follow STYLE_GUIDE.md — it is the source of truth for conventions.
+The project uses **Nuxt 4's `app/` + `server/` directory split**. Always follow `docs/style-guide.md` — it is the source of truth for conventions.
 
 ### Backend Layering (`server/`)
 
@@ -78,7 +78,7 @@ Storage via MinIO (S3-compatible). Buckets: `course-covers`, `course-pdfs`, `ava
 
 ## Quick Context (Always Read First)
 
-At the start of every task, read `/PRD_SUMMARY.md` to understand the project's goals, scope, stack, and global constraints.
+At the start of every task, read `docs/prd.md` to understand the project's goals, scope, stack, and global constraints.
 
 ## Rules
 
