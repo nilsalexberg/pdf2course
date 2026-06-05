@@ -4,43 +4,42 @@
 
 ---
 
-## 🚀 Tech Stack
+## Tech Stack
 
-- **Framework**: [Nuxt 4](https://nuxt.com/) (using `app/` and `server/` pattern)
+- **Framework**: [Nuxt 4](https://nuxt.com/) (`app/` + `server/` pattern)
 - **Language**: TypeScript (Strict Mode)
 - **Package Manager**: [pnpm](https://pnpm.io/)
 - **Backend / API**: Nuxt Server Routes (Nitro) + [H3](https://h3.unjs.io/)
-- **Database / Auth / Storage**: [Supabase](https://supabase.com/)
+- **Auth**: [better-auth](https://www.better-auth.com/) (email/password)
+- **Database**: PostgreSQL (pgvector) + [Drizzle ORM](https://orm.drizzle.team/)
+- **Storage**: [MinIO](https://min.io/) (S3-compatible, self-hosted)
 - **AI**: Google Gemini API (`gemini-2.5-flash`)
 - **Job Queue**: [BullMQ](https://docs.bullmq.io/) + Redis
-- **Styling**: Tailwind CSS + [shadcn/ui](https://ui.shadcn.com/)
+- **Styling**: Tailwind CSS
 
 ---
 
-## ✨ Features
+## Features
 
 - **Automated Course Creation**: Upload up to 5 PDFs and let AI generate modules, lessons, and content.
-- **RAG-Powered Lessons**: Uses semantic search (embeddings) to retrieve context from your PDFs for lesson generation.
-- **Gamified Experience**: Vertical course maps, leveling system (XP), streaks, and lives (hearts).
-- **Interactive Exercises**: AI-generated quizzes including multiple choice, true/false, fill in the blanks, and ordering.
-- **Course Lifecycle**: Private by default, with an admin-driven review process for public publication.
-- **Lazy Content Generation**: Lessons are generated on-demand when a user starts them, then cached for performance.
+- **RAG-Powered Lessons**: Semantic search via pgvector embeddings retrieves context from PDFs during lesson generation.
+- **Gamified Experience**: Vertical course maps and XP-based progression.
+- **Interactive Exercises**: AI-generated quizzes — multiple choice, true/false, fill in the blanks, ordering.
+- **Course Lifecycle**: Private by default, admin-driven review for public publication.
+- **Lazy Content Generation**: Lessons generated on-demand, cached after first run.
 
 ---
 
-## 🛠 Prerequisites
+## Prerequisites
 
-Before you begin, ensure you have:
-
-- [Node.js](https://nodejs.org/) (latest LTS recommended)
-- [pnpm](https://pnpm.io/) installed (`npm install -g pnpm`)
-- A [Redis](https://redis.io/) instance running (local or cloud)
-- A [Supabase](https://supabase.com/) account and project
+- [Node.js](https://nodejs.org/) (LTS)
+- [pnpm](https://pnpm.io/) (`npm install -g pnpm`)
+- [Docker](https://www.docker.com/) + Docker Compose
 - A [Google Gemini API Key](https://aistudio.google.com/app/apikey)
 
 ---
 
-## 🏗 Setup Guide
+## Setup Guide
 
 ### 1. Clone & Install
 
@@ -60,45 +59,62 @@ cp .env.example .env
 
 Key variables:
 
-- `SUPABASE_URL` / `SUPABASE_KEY`: Your project credentials.
-- `REDIS_URL`: Connection string for BullMQ (e.g., `redis://localhost:6379`).
-- `GEMINI_API_KEY`: Your Google AI Studio key.
+- `DATABASE_URL`: PostgreSQL connection string (e.g., `postgres://postgres:password@localhost:5432/pdf2course`).
+- `BETTER_AUTH_SECRET`: Random secret for session signing.
+- `BETTER_AUTH_URL`: Base URL of the app (e.g., `http://localhost:3000`).
+- `REDIS_URL`: BullMQ connection string (e.g., `redis://localhost:6379`).
+- `MINIO_ENDPOINT`: MinIO server URL (e.g., `http://localhost:9000`).
+- `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY`: MinIO credentials.
+- `GEMINI_API_KEY`: Google AI Studio key.
 - `SITE_URL`: Set to `http://localhost:3000` for development.
 
-### 3. Supabase Configuration
+### 3. Start Infrastructure
 
-1.  **Migrations**: Run the SQL scripts found in `supabase/migrations/` in your Supabase SQL Editor.
-2.  **Storage**: Create two **private** buckets:
-    - `course-covers`: For course thumbnail images.
-    - `course-pdfs`: For the uploaded source material.
-3.  **RLS**: Ensure Row Level Security is enabled. The migrations include initial policies, but double-check them in the dashboard.
+Start PostgreSQL, Redis, and MinIO via Docker Compose:
 
-### 4. Running the Project
+```bash
+docker compose up -d postgres redis minio
+```
+
+### 4. Run Migrations
+
+```bash
+pnpm db:migrate
+```
+
+Buckets are created automatically on first app start via the `ensureBuckets` server plugin.
+
+### 5. Run the App
 
 ```bash
 pnpm dev
 ```
 
-The application will start at `http://localhost:3000`. The background worker for course generation starts automatically as a Nitro plugin.
+App starts at `http://localhost:3000`. The BullMQ worker starts automatically as a Nitro plugin.
 
 ---
 
-## 🔑 Google OAuth (Optional)
+## Production Deployment
 
-1.  Enable "Google" under **Authentication > Providers** in the Supabase dashboard.
-2.  Configure your OAuth credentials in the [Google Cloud Console](https://console.cloud.google.com/).
-3.  Add the redirect URI: `https://<your-project-ref>.supabase.co/auth/v1/callback`.
-4.  Update `SITE_URL` in `.env` if using a production environment.
+Run the full stack (app + postgres + redis + minio):
+
+```bash
+docker compose up -d
+```
+
+The `app` service runs `pnpm db:migrate` automatically before starting via the `migrate` server plugin.
 
 ---
 
-## 📐 Architecture
+## Architecture
 
-The project follows a **Layered Architecture** within the `server/` directory:
+Layered architecture within `server/`:
 
-- **API Handlers**: Thin wrappers for requests/validation.
-- **Services**: Business logic and orchestration (Gemini, Storage).
-- **Repositories**: Direct data access using Supabase client.
-- **Workers**: Asynchronous processing using BullMQ.
+- **API Handlers**: Thin controllers — auth → validate → call service → return.
+- **Service Layer**: Business logic and external integrations (Gemini, Storage).
+- **Repository Layer**: Pure Drizzle queries, no business logic.
+- **Workers**: Async processing via BullMQ.
+- **`server/db/`**: Drizzle client (`index.ts`) and schema (`schema.ts`).
+- **`server/lib/`**: Shared infrastructure — `auth.ts` (better-auth instance), `storage.ts` (MinIO/S3 client).
 
 Refer to [STYLE_GUIDE.md](./STYLE_GUIDE.md) for detailed coding standards.
