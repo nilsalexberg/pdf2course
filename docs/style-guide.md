@@ -1,19 +1,18 @@
-# Project Style Guide - pdf2course
+# Style Guide — pdf2course
 
-## Overview
+## Tech Stack
 
-**pdf2course** is a Nuxt 4 application designed to transform instructional PDFs into gamified learning experiences.
-
-### Tech Stack
-
-- **Framework**: [Nuxt 4](https://nuxt.com/) (using the `app/` and `server/` directory structure).
-- **Language**: TypeScript (Strict Mode).
-- **Package Manager**: [pnpm](https://pnpm.io/).
-- **Backend / API**: Nuxt Server Routes (Nitro) + [H3](https://h3.unjs.io/).
-- **Database / Auth / Storage**: [Supabase](https://supabase.com/).
-- **AI**: Google Gemini API (`gemini-2.5-flash`).
-- **Styling**: Tailwind CSS + [shadcn/ui](https://ui.shadcn.com/) (Vue port).
-- **Validation**: [Zod](https://zod.dev/).
+- **Framework**: [Nuxt 4](https://nuxt.com/) (`app/` + `server/` directories)
+- **Language**: TypeScript (Strict Mode)
+- **Package Manager**: [pnpm](https://pnpm.io/)
+- **Backend / API**: Nuxt Server Routes (Nitro) + [H3](https://h3.unjs.io/)
+- **Auth**: [better-auth](https://www.better-auth.com/) (email/password; instance at `server/lib/auth.ts`)
+- **Database**: PostgreSQL (pgvector) + [Drizzle ORM](https://orm.drizzle.team/) (schema at `server/db/schema.ts`)
+- **Storage**: [MinIO](https://min.io/) (S3-compatible; client at `server/lib/storage.ts`)
+- **AI**: Google Gemini API (`gemini-2.5-flash`)
+- **Job Queue**: [BullMQ](https://docs.bullmq.io/) + Redis
+- **Styling**: Tailwind CSS
+- **Validation**: [Zod](https://zod.dev/)
 
 ---
 
@@ -21,78 +20,103 @@
 
 ```text
 /
-├── app/                  # Frontend (Nuxt 4 App Layer)
-│   ├── assets/           # Global styles and static assets
-│   ├── components/       # Vue Components
-│   │   └── ui/           # Base Atomic UI Components (prefixed with `Ui`)
-│   ├── composables/      # Shared state and logic (Vue Composition API)
-│   ├── middleware/       # Route protection (auth, role-based)
-│   ├── pages/            # View components (file-based routing)
-│   └── app.vue           # Main Entry Point
-├── server/               # Backend (Nuxt Server Layer)
-│   ├── api/              # API Endpoint Handlers (H3 event handlers)
-│   ├── auth/             # Auth utilities (server-side security)
-│   ├── repositories/     # Data Access Layer (Supabase client calls)
-│   ├── services/         # Business Logic Layer (Orchestration)
-│   ├── storage/          # File storage logic (Supabase Storage)
-│   └── validators/       # Zod schemas for request validation
-├── types/                # Shared TypeScript types / Interfaces
-├── supabase/             # Database migrations and seed scripts
-└── STYLE_GUIDE.md        # This document
+├── app/                    # Frontend (Nuxt 4 App Layer)
+│   ├── assets/             # Global styles and static assets
+│   ├── components/
+│   │   ├── ui/             # Atomic UI components (prefixed `Ui`)
+│   │   └── [domain]/       # Feature-specific components
+│   ├── composables/        # Shared state and logic (Vue Composition API)
+│   ├── middleware/         # Route guards (auth, role-based)
+│   ├── pages/              # File-based routing
+│   └── app.vue
+├── server/                 # Backend (Nuxt Server Layer)
+│   ├── api/                # API endpoint handlers (H3 event handlers)
+│   ├── auth/               # Auth helpers (requireUser, requireRole)
+│   ├── db/                 # Drizzle client (index.ts) and schema (schema.ts)
+│   ├── http/               # Low-level HTTP utilities (multipart parsing, etc.)
+│   ├── lib/                # Shared infrastructure (auth.ts, storage.ts)
+│   ├── plugins/            # Nitro plugins (worker boot, ensureBuckets, migrate)
+│   ├── queues/             # BullMQ queue definitions
+│   ├── repositories/       # Data access layer (Drizzle queries)
+│   ├── services/           # Business logic and external integrations
+│   ├── storage/            # File upload/delete/presign wrappers (per bucket)
+│   ├── utils/              # Shared server utilities
+│   ├── validators/         # Zod schemas for API inputs
+│   └── workers/            # BullMQ worker implementations
+├── types/                  # Shared TypeScript types
+├── docs/                   # Project documentation
+├── drizzle/                # Generated Drizzle migrations
+│   └── migrations/
+└── drizzle.config.ts
 ```
 
 ---
 
-## Backend Architecture (server/)
+## Backend Architecture (`server/`)
 
-The backend follows a **Layered Architecture** to ensure separation of concerns and testability.
+Strict layered architecture — never skip layers.
 
 ### 1. API Handlers (`server/api/`)
 
-API handlers are thin. Their responsibilities are:
+Thin controllers only. Responsibilities in order:
 
-- Receive the `event`.
-- Authenticate the user (`requireUser`).
-- Authorize the operation (`requireRole`).
-- Extract and validate request data using Zod (`server/validators/`).
-- Call the appropriate **Service**.
-- Return the result.
+1. Authenticate — `requireUser(event)`
+2. Authorize — `requireRole(...)` if needed
+3. Validate — read body/params, run Zod schema
+4. Call service — pass validated data
+5. Return result
 
-### 2. Service Layer (`server/services/`)
+No DB queries. No business logic. No direct Drizzle imports.
 
-This is where the **Business Logic** lives. Services:
+### 2. Service Layer (`server/services/[domain]/`)
 
-- Orchestrate multiple repositories if needed.
-- Handle external integrations (e.g., Gemini API, Storage).
-- Are organized by domain (e.g., `services/courses/`).
+All business logic lives here. Services:
+
+- Orchestrate repositories and external calls
+- Handle Gemini API, storage operations
+- Are single-purpose files (e.g., `createCourse.ts`, `generateLessonContent.ts`)
 
 ### 3. Repository Layer (`server/repositories/`)
 
-Pure **Data Access Layer**. Repositories:
+Pure data access — Drizzle queries only. Repositories:
 
-- Use the Supabase client to interact with the database.
-- Should NOT contain business logic.
-- Handle errors from the database and wrap them in H3 errors if necessary.
+- Import `db` from `server/db` and tables from `server/db/schema`
+- Return typed results, no business logic
+- Wrap DB errors in H3 errors when appropriate
+- Named `[entity]Repo.ts`
 
-### 4. Auth & Security
+### 4. Auth & Security (`server/auth/`)
 
-- Use `requireUser(event)` to ensure the user is logged in.
-- Use `requireRole(event, client, userId, isAdminOnly)` to enforce role-based access.
+- `requireUser(event)` — validates better-auth session, returns user. Throws 401 if missing.
+- `requireRole(event, userId, isAdmin)` — enforces RBAC. Throws 403 if insufficient role.
+- Auth instance lives at `server/lib/auth.ts` — never instantiate it elsewhere.
+
+### 5. DB (`server/db/`)
+
+- `index.ts` — Drizzle client singleton; always import `db` from here
+- `schema.ts` — all table definitions; import table refs from here in repositories
+- Never use raw `postgres` client directly outside of `server/db/index.ts`
+
+### 6. Storage (`server/storage/`)
+
+- One file per bucket: `courseCovers.ts`, `coursePdfs.ts`, `avatars.ts`
+- All use helpers from `server/lib/storage.ts` (S3/MinIO client)
+- Always return presigned URLs — never expose raw object paths to the client
 
 ---
 
-## Frontend Architecture (app/)
+## Frontend Architecture (`app/`)
 
-### 1. Components
+### Components
 
-- Use **Vue 3 Composition API** with `<script setup lang="ts">`.
-- **UI Components**: Place in `app/components/ui/` and prefix with `Ui` (e.g., `UiButton.vue`). These are "dumb" components focused on styling.
-- **Domain Components**: Place in `app/components/[domain]/`.
+- Use **Vue 3 Composition API** with `<script setup lang="ts">`
+- **UI Components** (`app/components/ui/`) — "dumb" components, prefixed `Ui` (e.g., `UiButton.vue`)
+- **Domain Components** (`app/components/[domain]/`) — feature-specific, not prefixed
 
-### 2. Composables
+### Composables
 
-- Use `app/composables/` for reusable logic or shared state (via `useState`).
-- Example: `useProfile.ts` manages the current user's profile state globally.
+- `app/composables/` for reusable logic or shared state via `useState`
+- `useProfile.ts` manages current user's profile globally
 
 ---
 
@@ -100,22 +124,29 @@ Pure **Data Access Layer**. Repositories:
 
 ### Naming Conventions
 
-- **Server-side Files**: `camelCase.ts`.
-- **Vue Components**: `PascalCase.vue`.
-- **Repositories**: `[entity]Repo.ts`.
-- **API Routes**: Nuxt convention `[name].[method].ts` (e.g., `courses.get.ts`).
+| Thing | Convention |
+|---|---|
+| Server files | `camelCase.ts` |
+| Vue components | `PascalCase.vue` |
+| Repositories | `[entity]Repo.ts` |
+| API routes | `[name].[method].ts` |
+| DB tables/columns | `snake_case` |
+| Types | `PascalCase` in `types/` |
 
-### Logic Separation
+### Logic Separation Rules
 
-- **NEVER** put database queries directly in API handlers.
-- **NEVER** put complex business logic in repositories.
-- **ALWAYS** use shared types from the `types/` directory to ensure consistency between frontend and backend.
-- **Validation**: Use Zod schemas for all non-trivial API inputs.
+- **NEVER** put DB queries in API handlers
+- **NEVER** put business logic in repositories
+- **ALWAYS** use types from `types/` — never redefine inline
+- **ALWAYS** validate non-trivial API inputs with Zod schemas in `server/validators/`
 
 ---
 
 ## Database & Migrations
 
-- All database changes MUST be recorded in `supabase/migrations/`.
-- Use snake_case for table names and column names.
-- Ensure [Row Level Security (RLS)](https://supabase.com/docs/guides/auth/row-level-security) is enabled and properly configured for every table.
+- Schema defined in `server/db/schema.ts` using Drizzle table builders
+- Generate migration: `pnpm db:generate`
+- Apply migration: `pnpm db:migrate`
+- All schema changes must go through a migration file in `drizzle/migrations/`
+- Use `snake_case` for all table names and column names
+- Migrations auto-run on production startup via the `migrate` Nitro plugin
