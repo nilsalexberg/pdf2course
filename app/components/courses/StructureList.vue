@@ -99,8 +99,9 @@
         localModules.value[idx] = { ...localModules.value[idx], ...updated } as ModuleWithLessons;
       }
       editingModuleId.value = null;
-    } catch (err: any) {
-      moduleError.value = err?.data?.message ?? err?.message ?? 'Failed to save module.';
+    } catch (err: unknown) {
+      const e = err as { data?: { message?: string }; message?: string };
+      moduleError.value = e?.data?.message ?? e?.message ?? 'Failed to save module.';
     } finally {
       moduleSaving.value = false;
     }
@@ -160,8 +161,9 @@
         if (idx !== -1) mod.lessons[idx] = updated;
       }
       editingLessonId.value = null;
-    } catch (err: any) {
-      lessonError.value = err?.data?.message ?? err?.message ?? 'Failed to save lesson.';
+    } catch (err: unknown) {
+      const e = err as { data?: { message?: string }; message?: string };
+      lessonError.value = e?.data?.message ?? e?.message ?? 'Failed to save lesson.';
     } finally {
       lessonSaving.value = false;
     }

@@ -11,6 +11,7 @@ import {
 } from '../db/schema';
 import type {
   Course,
+  CourseConfig,
   CoursePdf,
   DocumentChunk,
   DocumentSummary,
@@ -40,7 +41,7 @@ export async function insertCourse(input: {
   title: string;
   description: string | null;
   coverUrl: string | null;
-  config: any;
+  config: CourseConfig;
 }): Promise<Course | null> {
   const result = await db
     .insert(courses)
@@ -70,7 +71,7 @@ export async function getCourseById(id: string): Promise<Course | null> {
 
 export async function updateCourse(
   id: string,
-  input: { title: string; description: string | null; config: any }
+  input: { title: string; description: string | null; config: CourseConfig }
 ): Promise<Course | null> {
   const result = await db
     .update(courses)
@@ -270,7 +271,7 @@ export async function semanticSearchChunks(
   const result = await db.execute(
     sql`SELECT id::text, content, similarity FROM match_document_chunks(${courseId}::uuid, ${`[${queryEmbedding.join(',')}]`}::vector(3072), ${matchCount})`
   );
-  return (result as any[]).map((r) => ({
+  return (result as Array<{ id: string; content: string; similarity: unknown }>).map((r) => ({
     id: r.id,
     content: r.content,
     similarity: Number(r.similarity)

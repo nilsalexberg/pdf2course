@@ -1,5 +1,7 @@
+import type { User } from 'better-auth';
+
 export default defineNuxtRouteMiddleware(async (to) => {
-  const authUser = useState<any>('authUser');
+  const authUser = useState<User | null>('authUser');
   const { profile, refresh } = useProfile();
 
   if (!authUser.value) return;

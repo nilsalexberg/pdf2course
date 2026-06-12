@@ -1,12 +1,14 @@
 <script setup lang="ts">
+  import type { User } from 'better-auth';
+
   useHead({ title: 'pdf2course' });
 
-  const authUser = useState<any>('authUser');
+  const authUser = useState<User | null>('authUser');
   const { profile, refresh } = useProfile();
 
   watch(
     authUser,
-    async (u: any) => {
+    async (u) => {
       if (!u) return navigateTo('/auth/login');
 
       if (!profile.value) {

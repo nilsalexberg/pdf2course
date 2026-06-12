@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { FetchError } from 'ofetch';
   import type { Lesson } from '@@/types/course';
 
   const props = defineProps<{
@@ -22,11 +23,12 @@
         { method: 'POST' }
       );
       emit('update:lesson', updated);
-    } catch (err: any) {
+    } catch (err) {
+      const errorMsg = err instanceof FetchError ? err.data?.statusMessage || err.message : (err as Error)?.message || 'Unknown error';
       emit('update:lesson', {
         ...props.lesson,
         status: 'failed',
-        generationError: err?.data?.statusMessage ?? err?.message ?? 'Unknown error'
+        generationError: errorMsg
       });
     } finally {
       isGenerating.value = false;

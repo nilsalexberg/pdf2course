@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { FetchError } from 'ofetch';
   const props = defineProps<{
     courseId: string | null;
   }>();
@@ -33,8 +34,12 @@
       });
       emit('rejected');
       emit('close');
-    } catch (err: any) {
-      error.value = err.data?.statusMessage || 'Failed to reject course';
+    } catch (err) {
+      if (err instanceof FetchError) {
+        error.value = err.data?.statusMessage || 'Failed to reject course';
+      } else {
+        error.value = 'Failed to reject course';
+      }
     } finally {
       loading.value = false;
     }

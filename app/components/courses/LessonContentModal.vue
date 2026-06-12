@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { FetchError } from 'ofetch';
   import type { Lesson, LessonContent, LessonStep } from '@@/types/course';
 
   const props = defineProps<{
@@ -46,8 +47,10 @@
       emit('update:lesson', updated);
       editing.value = false;
       draft.value = null;
-    } catch (err: any) {
-      saveError.value = err?.data?.statusMessage ?? err?.message ?? 'Failed to save';
+    } catch (err) {
+      if (err instanceof FetchError) {
+        saveError.value = err.data?.statusMessage || err.message || 'Failed to save';
+      }
     } finally {
       saving.value = false;
     }

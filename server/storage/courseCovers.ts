@@ -13,7 +13,7 @@ export function buildCoverPath(userId: string, courseId: string, originalFilenam
 }
 
 export function validateCoverFile(file: MultipartFile) {
-  if (!ALLOWED_COVER_TYPES.includes(file.type as any)) {
+  if (!(ALLOWED_COVER_TYPES as readonly string[]).includes(file.type)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Cover must be image/jpeg, image/png, or image/webp'

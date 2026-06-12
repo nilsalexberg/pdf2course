@@ -31,8 +31,8 @@
       currentPassword.value = '';
       newPassword.value = '';
       confirmPassword.value = '';
-    } catch (err: any) {
-      alert.value = { type: 'error', message: err.message || 'Failed to update password.' };
+    } catch (err: unknown) {
+      alert.value = { type: 'error', message: (err as Error).message || 'Failed to update password.' };
     } finally {
       saving.value = false;
     }

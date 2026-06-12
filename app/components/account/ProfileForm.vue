@@ -1,4 +1,6 @@
 <script setup lang="ts">
+  import { FetchError } from 'ofetch';
+
   const { profile, refresh } = useProfile();
 
   const fullName = ref(profile.value?.full_name ?? '');
@@ -37,10 +39,14 @@
       await $fetch('/api/me', { method: 'PATCH', body: { full_name: fullName.value } });
       await refresh();
       alert.value = { type: 'success', message: 'Profile updated successfully.' };
-    } catch (err: any) {
+    } catch (err) {
+      let message = 'Failed to update profile.';
+      if (err instanceof FetchError) {
+        message = err.data?.statusMessage || 'Failed to update profile.';
+      }
       alert.value = {
         type: 'error',
-        message: err.data?.statusMessage || 'Failed to update profile.'
+        message
       };
     } finally {
       saving.value = false;

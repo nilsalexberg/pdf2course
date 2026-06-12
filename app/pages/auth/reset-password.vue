@@ -29,8 +29,8 @@
       if (error) throw error;
       message.value = 'Password successfully changed. Redirecting to login...';
       setTimeout(() => router.replace('/auth/login'), 1500);
-    } catch (err: any) {
-      errorMessage.value = err?.message ?? 'Error resetting password.';
+    } catch (err: unknown) {
+      errorMessage.value = (err as Error)?.message ?? 'Error resetting password.';
     } finally {
       loading.value = false;
     }

@@ -1,10 +1,12 @@
 <script setup lang="ts">
+  import type { User } from 'better-auth';
+
   definePageMeta({ middleware: ['auth'] });
 
   const { profile } = useProfile();
   const { setBreadcrumbs } = useBreadcrumbs();
   const { $authClient } = useNuxtApp();
-  const authUser = useState<any>('authUser');
+  const authUser = useState<User | null>('authUser');
   const router = useRouter();
 
   setBreadcrumbs([{ label: 'My Account' }]);

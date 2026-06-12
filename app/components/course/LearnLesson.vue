@@ -10,7 +10,7 @@
     isLocked: boolean;
   }>();
 
-  const emit = defineEmits<{
+  defineEmits<{
     toggle: [lessonId: string];
     'update:lesson': [lesson: Lesson];
   }>();

@@ -43,8 +43,8 @@
         method: 'DELETE'
       });
       await refresh();
-    } catch (err: any) {
-      errorMessage.value = err?.data?.message ?? 'Failed to delete PDF.';
+    } catch (err: unknown) {
+      errorMessage.value = (err as { data?: { message?: string } })?.data?.message ?? 'Failed to delete PDF.';
     } finally {
       deletingId.value = null;
     }

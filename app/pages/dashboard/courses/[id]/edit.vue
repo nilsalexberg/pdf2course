@@ -102,11 +102,12 @@
       const formData = buildFormData((fd) => {
         for (const pdf of stagedPdfs.value) fd.append('pdfs', pdf);
       });
-      await $fetch(`/api/courses/${id}`, { method: 'PUT', body: formData } as any);
+      await $fetch(`/api/courses/${id}`, { method: 'PUT', body: formData });
       await refresh();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const e = err as { data?: { message?: string }; message?: string; statusMessage?: string };
       errorMessage.value =
-        err?.data?.message ?? err?.message ?? err?.statusMessage ?? 'Failed to update course.';
+        e?.data?.message ?? e?.message ?? e?.statusMessage ?? 'Failed to update course.';
     } finally {
       loading.value = false;
     }

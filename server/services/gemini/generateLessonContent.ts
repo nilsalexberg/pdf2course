@@ -36,12 +36,6 @@ const fillBlankSchema = z.object({
   explanation: z.string()
 });
 
-const exerciseSchema = z.discriminatedUnion('type', [
-  multipleChoiceSchema,
-  trueFalseSchema,
-  fillBlankSchema
-]);
-
 const lessonSectionSchema = z.object({
   type: z.literal('section'),
   title: z.string(),

@@ -1,6 +1,9 @@
+import type { User } from 'better-auth';
+import type { Profile } from '@@/types/profile';
+
 export function useProfile() {
-  const authUser = useState<any>('authUser', () => null);
-  const profile = useState<any | null>('profile', () => null);
+  const authUser = useState<User | null>('authUser', () => null);
+  const profile = useState<Profile | null>('profile', () => null);
   const loading = useState<boolean>('profile-loading', () => false);
 
   async function fetchProfile() {
@@ -10,7 +13,7 @@ export function useProfile() {
     }
     loading.value = true;
     try {
-      const data = await $fetch<{ profile: any }>('/api/me');
+      const data = await $fetch<{ profile: Profile }>('/api/me');
       profile.value = data?.profile ?? null;
     } catch {
       profile.value = null;

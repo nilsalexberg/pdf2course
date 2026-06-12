@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { FetchError } from 'ofetch';
   import type { CourseWithSignedCover } from '@@/types/course';
 
   definePageMeta({ middleware: ['auth', 'role'] });
@@ -20,10 +21,14 @@
     if (!confirm('Are you sure you want to delete this course?')) return;
 
     try {
-      await $fetch(`/api/courses/${id}`, { method: 'DELETE' } as any);
+      await $fetch(`/api/courses/${id}`, { method: 'DELETE' });
       await refresh();
-    } catch (err: any) {
-      alert(err.data?.statusMessage || 'Failed to delete course');
+    } catch (err) {
+      let message = 'Failed to delete course';
+      if (err instanceof FetchError) {
+        message = err.data?.statusMessage || 'Failed to delete course';
+      }
+      alert(message);
     }
   }
 

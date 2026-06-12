@@ -20,8 +20,8 @@
       });
       if (error) throw error;
       message.value = 'If the email exists, we will send a reset link.';
-    } catch (err: any) {
-      errorMessage.value = err?.message ?? 'Error requesting password reset.';
+    } catch (err: unknown) {
+      errorMessage.value = (err as Error)?.message ?? 'Error requesting password reset.';
     } finally {
       loading.value = false;
     }

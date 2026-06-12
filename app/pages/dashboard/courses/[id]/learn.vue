@@ -22,8 +22,8 @@
 
   const { setBreadcrumbs } = useBreadcrumbs();
   watch(
-    data as any,
-    (d: LearnStructure | null) => {
+    data,
+    (d) => {
       setBreadcrumbs([
         { label: 'Dashboard', to: '/dashboard' },
         { label: d?.course.title || 'Course' }

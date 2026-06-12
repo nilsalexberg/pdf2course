@@ -36,7 +36,7 @@ async function runSearch() {
   }
 
   console.log('\n--- RESULTADOS ENCONTRADOS ---');
-  data.forEach((res: any, i: number) => {
+  data.forEach((res: { similarity: number; content: string }, i: number) => {
     console.log(`\n[${i + 1}] Similarity: ${(res.similarity * 100).toFixed(2)}%`);
     console.log(`"${res.content.substring(0, 200)}..."`); // Mostra só o começo
   });

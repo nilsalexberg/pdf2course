@@ -1,3 +1,4 @@
+import type { H3Event } from 'h3';
 import { readMultipartFormData } from 'h3';
 
 export interface MultipartFile {
@@ -13,7 +14,7 @@ export interface MultipartResult {
 
 type MultipartPart = { data: Buffer; name?: string; filename?: string; type?: string };
 
-export async function readMultipart(event: any): Promise<MultipartPart[] | undefined> {
+export async function readMultipart(event: H3Event): Promise<MultipartPart[] | undefined> {
   return await readMultipartFormData(event);
 }
 
@@ -42,7 +43,7 @@ export function parseMultipart(parts: MultipartPart[] | undefined): MultipartRes
   return { fields, files };
 }
 
-export async function readCourseCreateMultipart(event: any) {
+export async function readCourseCreateMultipart(event: H3Event) {
   const parts = await readMultipart(event);
   const { fields, files } = parseMultipart(parts);
 

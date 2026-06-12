@@ -87,7 +87,7 @@ export async function processCourseGeneration(courseId: string) {
 /**
  * Downloads course PDFs, extracts text using PDFParse, and cleans it.
  */
-async function extractTextFromPdfs(pdfs: any[]) {
+async function extractTextFromPdfs(pdfs: CoursePdf[]) {
   for (const pdf of pdfs) {
     // Idempotency: skip PDFs already processed in a previous run
     if (pdf.extractedText) {
@@ -112,7 +112,7 @@ async function extractTextFromPdfs(pdfs: any[]) {
  * Idempotent: deletes existing chunks for each PDF before re-inserting.
  * Wrapped in a try/catch per PDF so failures are clearly attributed for worker retries.
  */
-async function chunkDocuments(courseId: string, pdfs: any[], course: Course) {
+async function chunkDocuments(courseId: string, pdfs: CoursePdf[], course: Course) {
   const chunkSize = course.config?.chunkSize;
   const chunkOverlap = course.config?.chunkOverlap;
   // Fetch all existing chunks for the course to check which PDFs are already fully processed
@@ -254,7 +254,7 @@ async function persistCourseStructure(courseId: string, structure: CourseStructu
  * Generates a structured knowledge taxonomy (aiSummary) for each PDF using Gemini.
  * Idempotent: skips PDFs that already have an aiSummary from a previous run.
  */
-async function summarizeDocuments(courseId: string, pdfs: any[]) {
+async function summarizeDocuments(courseId: string, pdfs: CoursePdf[]) {
   await updateCourseGenerationStatus(courseId, 'summarizing');
   console.log(`[course-generation] Course ${courseId} status → summarizing`);
 

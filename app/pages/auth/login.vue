@@ -1,9 +1,11 @@
 <script setup lang="ts">
+  import type { User } from 'better-auth';
+
   definePageMeta({ layout: 'blank' });
   useHead({ title: 'Login · pdf2course' });
 
   const { $authClient } = useNuxtApp();
-  const authUser = useState<any>('authUser');
+  const authUser = useState<User | null>('authUser');
   const router = useRouter();
 
   const email = ref('');
@@ -34,8 +36,8 @@
       });
       if (error) throw error;
       authUser.value = data?.user ?? null;
-    } catch (err: any) {
-      errorMessage.value = err?.message ?? 'Error logging in.';
+    } catch (err: unknown) {
+      errorMessage.value = (err as Error)?.message ?? 'Error logging in.';
     } finally {
       loading.value = false;
     }

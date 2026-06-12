@@ -60,9 +60,10 @@
       });
       const course = await $fetch<Course>('/api/courses', { method: 'POST', body: formData });
       await router.replace(`/dashboard/courses/${course.id}/edit`);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const e = err as { data?: { message?: string }; message?: string; statusMessage?: string };
       errorMessage.value =
-        err?.data?.message ?? err?.message ?? err?.statusMessage ?? 'Failed to create course.';
+        e?.data?.message ?? e?.message ?? e?.statusMessage ?? 'Failed to create course.';
     } finally {
       loading.value = false;
     }

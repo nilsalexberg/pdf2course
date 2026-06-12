@@ -13,7 +13,7 @@ export function buildAvatarPath(userId: string, originalFilename: string) {
 }
 
 export function validateAvatarFile(file: MultipartFile) {
-  if (!ALLOWED_AVATAR_TYPES.includes(file.type as any)) {
+  if (!(ALLOWED_AVATAR_TYPES as readonly string[]).includes(file.type)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Avatar must be image/jpeg, image/png, or image/webp'

@@ -56,7 +56,7 @@ export async function updateCourse(
     if (course.coverUrl) {
       try {
         await deleteCourseCover(course.coverUrl);
-      } catch (err) {
+      } catch {
         // Ignore if old cover is missing
       }
     }

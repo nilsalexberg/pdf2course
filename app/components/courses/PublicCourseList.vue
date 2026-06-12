@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { FetchError } from 'ofetch';
   import type { CourseWithSignedCover } from '@@/types/course';
 
   interface PublicCoursesResponse {
@@ -39,8 +40,12 @@
         courses.value.push(...res.courses);
       }
       total.value = res.total;
-    } catch (err: any) {
-      error.value = err.data?.statusMessage || 'Failed to load courses';
+    } catch (err) {
+      if (err instanceof FetchError) {
+        error.value = err.data?.statusMessage || 'Failed to load courses';
+      } else {
+        error.value = 'Failed to load courses';
+      }
     } finally {
       loading.value = false;
       loadingMore.value = false;

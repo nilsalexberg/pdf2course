@@ -1,9 +1,10 @@
 import { createAuthClient } from 'better-auth/client';
+import type { User } from 'better-auth';
 
 export default defineNuxtPlugin(async () => {
   const authClient = createAuthClient({ baseURL: window.location.origin });
 
-  const authUser = useState<any>('authUser', () => null);
+  const authUser = useState<User | null>('authUser', () => null);
   const authLoaded = useState<boolean>('authLoaded', () => false);
 
   const { data } = await authClient.getSession();

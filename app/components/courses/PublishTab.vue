@@ -78,9 +78,10 @@
         method: 'POST'
       });
       if (props.course) emit('update:course', { ...props.course, ...updated });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const e = err as { data?: { message?: string }; message?: string; statusMessage?: string };
       errorMessage.value =
-        err?.data?.message ?? err?.message ?? err?.statusMessage ?? 'Failed to start generation.';
+        e?.data?.message ?? e?.message ?? e?.statusMessage ?? 'Failed to start generation.';
     } finally {
       generating.value = false;
     }
@@ -94,9 +95,10 @@
         method: 'POST'
       });
       if (props.course) emit('update:course', { ...props.course, ...updated });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const e = err as { data?: { message?: string }; message?: string; statusMessage?: string };
       errorMessage.value =
-        err?.data?.message ?? err?.message ?? err?.statusMessage ?? 'Failed to submit for review.';
+        e?.data?.message ?? e?.message ?? e?.statusMessage ?? 'Failed to submit for review.';
     } finally {
       submittingReview.value = false;
     }

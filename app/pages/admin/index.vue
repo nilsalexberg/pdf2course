@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { FetchError } from 'ofetch';
   import type { CourseWithSignedCover } from '@@/types/course';
 
   definePageMeta({ middleware: ['auth', 'role'] });
@@ -31,8 +32,12 @@
     try {
       await $fetch(`/api/admin/courses/${id}/approve`, { method: 'POST' });
       await refresh();
-    } catch (err: any) {
-      actionError.value = err.data?.statusMessage || 'Failed to approve course';
+    } catch (err) {
+      if (err instanceof FetchError) {
+        actionError.value = err.data?.statusMessage || 'Failed to approve course';
+      } else {
+        actionError.value = 'Failed to approve course';
+      }
     }
   }
 

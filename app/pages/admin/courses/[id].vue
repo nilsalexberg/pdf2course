@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { FetchError } from 'ofetch';
   import type { CourseWithSignedCover, ModuleWithLessons } from '@@/types/course';
   import {
     COURSE_languageLevelS,
@@ -28,8 +29,8 @@
 
   const { setBreadcrumbs } = useBreadcrumbs();
   watch(
-    course as any,
-    (c: CourseWithSignedCover | null) => {
+    course,
+    (c) => {
       setBreadcrumbs([{ label: 'Admin', to: '/admin' }, { label: c?.title || 'Course' }]);
     },
     { immediate: true }
@@ -44,8 +45,12 @@
     try {
       await $fetch(`/api/admin/courses/${id}/approve`, { method: 'POST' });
       await refreshCourse();
-    } catch (err: any) {
-      actionError.value = err.data?.statusMessage || 'Failed to approve course';
+    } catch (err) {
+      if (err instanceof FetchError) {
+        actionError.value = err.data?.statusMessage || 'Failed to approve course';
+      } else {
+        actionError.value = 'Failed to approve course';
+      }
     }
   }
 
@@ -65,8 +70,12 @@
       rejectingId.value = null;
       rejectReason.value = '';
       await refreshCourse();
-    } catch (err: any) {
-      actionError.value = err.data?.statusMessage || 'Failed to reject course';
+    } catch (err) {
+      if (err instanceof FetchError) {
+        actionError.value = err.data?.statusMessage || 'Failed to reject course';
+      } else {
+        actionError.value = 'Failed to reject course';
+      }
     }
   }
 

@@ -39,9 +39,9 @@ async function runTest() {
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
     console.log('------------------------------------------------------------');
     console.log(`✅ [LOCAL TEST] Concluído com sucesso em ${duration}s!`);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('\n❌ [LOCAL TEST] Falha crítica no processamento:');
-    console.error(err?.message || err);
+    console.error((err as Error)?.message || err);
     process.exit(1);
   }
 }
